@@ -4,9 +4,12 @@ import { CollapsibleContent, CollapsibleRoot, CollapsibleTrigger } from 'reka-ui
 import { Markdown } from 'vue-stream-markdown'
 import 'vue-stream-markdown/index.css'
 
+import { useUII18n } from '@/composables/use-ui-i18n'
+
 import type { UIMessage, UIMessagePart } from 'ai'
 
 const { message } = defineProps<{ message: UIMessage }>()
+const { t } = useUII18n()
 
 type ToolPart = Extract<UIMessagePart, { toolCallId: string }>
 
@@ -73,10 +76,10 @@ function partKey(part: UIMessagePart, index: number): string {
                 <span class="text-[10px] text-muted">
                   {{
                     toolState(part) === 'pending'
-                      ? 'Running…'
+                      ? t('chat.toolRunning')
                       : toolState(part) === 'done'
-                        ? 'Done'
-                        : 'Error'
+                        ? t('chat.toolDone')
+                        : t('chat.toolError')
                   }}
                 </span>
                 <icon-lucide-chevron-down

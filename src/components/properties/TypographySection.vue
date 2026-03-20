@@ -5,39 +5,41 @@ import AppSelect from '@/components/AppSelect.vue'
 import FontPicker from '@/components/FontPicker.vue'
 import ScrubInput from '@/components/ScrubInput.vue'
 import { useNodeFontStatus } from '@/composables/use-font-status'
+import { useUII18n } from '@/composables/use-ui-i18n'
 import { useNodeProps } from '@/composables/use-node-props'
 import { loadFont } from '@/engine/fonts'
 
 const { store, node, updateProp, commitProp } = useNodeProps()
 const { missingFonts, hasMissingFonts } = useNodeFontStatus(() => node.value)
+const { t } = useUII18n()
 
-const WEIGHTS = [
-  { value: 100, label: 'Thin' },
-  { value: 200, label: 'ExtraLight' },
-  { value: 300, label: 'Light' },
-  { value: 400, label: 'Regular' },
-  { value: 500, label: 'Medium' },
-  { value: 600, label: 'SemiBold' },
-  { value: 700, label: 'Bold' },
-  { value: 800, label: 'ExtraBold' },
-  { value: 900, label: 'Black' }
-]
+const WEIGHTS = computed(() => [
+  { value: 100, label: t('prop.weightThin'), style: 'Thin' },
+  { value: 200, label: t('prop.weightExtraLight'), style: 'ExtraLight' },
+  { value: 300, label: t('prop.weightLight'), style: 'Light' },
+  { value: 400, label: t('prop.weightRegular'), style: 'Regular' },
+  { value: 500, label: t('prop.weightMedium'), style: 'Medium' },
+  { value: 600, label: t('prop.weightSemiBold'), style: 'SemiBold' },
+  { value: 700, label: t('prop.weightBold'), style: 'Bold' },
+  { value: 800, label: t('prop.weightExtraBold'), style: 'ExtraBold' },
+  { value: 900, label: t('prop.weightBlack'), style: 'Black' }
+])
 
-const currentWeightLabel = computed(
-  () => WEIGHTS.find((w) => w.value === node.value.fontWeight)?.label ?? 'Regular'
+const currentWeightStyle = computed(
+  () => WEIGHTS.value.find((w) => w.value === node.value.fontWeight)?.style ?? 'Regular'
 )
 
 type TextAlign = 'LEFT' | 'CENTER' | 'RIGHT'
 
 async function selectFamily(family: string) {
-  await loadFont(family, currentWeightLabel.value)
+  await loadFont(family, currentWeightStyle.value)
   store.updateNodeWithUndo(node.value.id, { fontFamily: family }, 'Change font')
   store.requestRender()
 }
 
 async function selectWeight(weight: number) {
-  const label = WEIGHTS.find((w) => w.value === weight)?.label ?? 'Regular'
-  await loadFont(node.value.fontFamily, label)
+  const style = WEIGHTS.value.find((w) => w.value === weight)?.style ?? 'Regular'
+  await loadFont(node.value.fontFamily, style)
   store.updateNodeWithUndo(node.value.id, { fontWeight: weight }, 'Change font weight')
   store.requestRender()
 }
@@ -68,13 +70,13 @@ function toggleDecoration(deco: 'UNDERLINE' | 'STRIKETHROUGH') {
 }
 
 onMounted(async () => {
-  await loadFont(node.value.fontFamily, currentWeightLabel.value)
+  await loadFont(node.value.fontFamily, currentWeightStyle.value)
 })
 </script>
 
 <template>
   <div v-if="node" data-test-id="typography-section" class="border-b border-border px-3 py-2">
-    <label class="mb-1.5 block text-[11px] text-muted">Typography</label>
+    <label class="mb-1.5 block text-[11px] text-muted">{{ t('prop.typography') }}</label>
 
     <div class="mb-1.5 flex items-center gap-1.5">
       <FontPicker class="min-w-0 flex-1" :model-value="node.fontFamily" @select="selectFamily" />
@@ -83,7 +85,9 @@ onMounted(async () => {
         data-test-id="typography-missing-font"
         class="size-3.5 shrink-0 text-amber-400"
         :title="
-          'Missing font' + (missingFonts.length > 1 ? 's' : '') + ': ' + missingFonts.join(', ')
+          (missingFonts.length > 1 ? t('prop.missingFonts') : t('prop.missingFont')) +
+          ': ' +
+          missingFonts.join(', ')
         "
       />
     </div>
@@ -159,7 +163,7 @@ onMounted(async () => {
               ? 'border-accent bg-accent text-white'
               : 'border-border bg-input text-muted hover:bg-hover hover:text-surface'
           "
-          title="Bold (⌘B)"
+          :title="`${t('prop.bold')} (⌘B)`"
           @click="toggleBold"
         >
           <icon-lucide-bold class="size-3.5" />
@@ -171,7 +175,7 @@ onMounted(async () => {
               ? 'border-accent bg-accent text-white'
               : 'border-border bg-input text-muted hover:bg-hover hover:text-surface'
           "
-          title="Italic (⌘I)"
+          :title="`${t('prop.italic')} (⌘I)`"
           @click="toggleItalic"
         >
           <icon-lucide-italic class="size-3.5" />
@@ -183,7 +187,7 @@ onMounted(async () => {
               ? 'border-accent bg-accent text-white'
               : 'border-border bg-input text-muted hover:bg-hover hover:text-surface'
           "
-          title="Underline (⌘U)"
+          :title="`${t('prop.underline')} (⌘U)`"
           @click="toggleDecoration('UNDERLINE')"
         >
           <icon-lucide-underline class="size-3.5" />
@@ -195,7 +199,7 @@ onMounted(async () => {
               ? 'border-accent bg-accent text-white'
               : 'border-border bg-input text-muted hover:bg-hover hover:text-surface'
           "
-          title="Strikethrough"
+          :title="t('prop.strikethrough')"
           @click="toggleDecoration('STRIKETHROUGH')"
         >
           <icon-lucide-strikethrough class="size-3.5" />

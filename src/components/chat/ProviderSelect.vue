@@ -14,10 +14,12 @@ import {
 import { computed, onMounted, ref } from 'vue'
 
 import { selectContent, selectItem, selectTrigger } from '@/components/ui/select'
+import { useUII18n } from '@/composables/use-ui-i18n'
 import { ACP_AGENTS, AI_PROVIDERS, AUTOMATION_HTTP_PORT, IS_TAURI } from '@open-pencil/core'
 import { useAIChat } from '@/composables/use-chat'
 
 const { providerID, providerDef } = useAIChat()
+const { t } = useUII18n()
 
 const mcpAvailable = ref(false)
 
@@ -84,7 +86,9 @@ const { triggerClass, itemClass, testId } = defineProps<{
         <SelectViewport>
           <template v-if="acpAgents.length">
             <SelectGroup>
-              <SelectLabel class="px-2 py-1 text-[10px] text-muted">Your agents</SelectLabel>
+              <SelectLabel class="px-2 py-1 text-[10px] text-muted">{{
+                t('provider.yourAgents')
+              }}</SelectLabel>
               <SelectItem
                 v-for="agent in acpAgents"
                 :key="agent.id"
@@ -98,7 +102,7 @@ const { triggerClass, itemClass, testId } = defineProps<{
           </template>
           <SelectGroup>
             <SelectLabel v-if="acpAgents.length" class="px-2 py-1 text-[10px] text-muted">
-              API key
+              {{ t('provider.apiKeySection') }}
             </SelectLabel>
             <SelectItem
               v-for="provider in AI_PROVIDERS"

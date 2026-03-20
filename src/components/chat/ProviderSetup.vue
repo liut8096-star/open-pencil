@@ -4,9 +4,11 @@ import { computed, ref } from 'vue'
 import ProviderSelect from '@/components/chat/ProviderSelect.vue'
 import { uiInput } from '@/components/ui/input'
 import { useAIChat } from '@/composables/use-chat'
+import { useUII18n } from '@/composables/use-ui-i18n'
 import { ACP_AGENTS } from '@open-pencil/core'
 
 const { providerID, providerDef, setAPIKey, customBaseURL, customModelID } = useAIChat()
+const { t } = useUII18n()
 
 const isACP = computed(() => providerID.value.startsWith('acp:'))
 const acpAgent = computed(() => {
@@ -36,7 +38,7 @@ function save() {
 <template>
   <div data-test-id="provider-setup" class="flex flex-1 flex-col items-center justify-center px-6">
     <icon-lucide-sparkles class="mb-3 size-7 text-muted" />
-    <p class="mb-5 text-center text-xs text-muted">Connect an AI provider to start chatting.</p>
+    <p class="mb-5 text-center text-xs text-muted">{{ t('provider.connectToStart') }}</p>
 
     <form v-if="!isACP" class="flex w-full flex-col gap-2" @submit.prevent="save">
       <ProviderSelect
@@ -51,7 +53,7 @@ function save() {
         v-model="baseURLInput"
         type="text"
         data-test-id="provider-base-url"
-        placeholder="Base URL (e.g. http://localhost:11434/v1)"
+        :placeholder="t('provider.baseUrlPlaceholder')"
         :class="uiInput()"
       />
 
@@ -61,7 +63,7 @@ function save() {
         v-model="customModelInput"
         type="text"
         data-test-id="provider-custom-model"
-        placeholder="Model ID (e.g. llama-3.3-70b)"
+        :placeholder="t('provider.modelPlaceholder')"
         :class="uiInput()"
       />
 
@@ -79,7 +81,7 @@ function save() {
         class="mt-1 w-full rounded bg-accent py-1.5 text-xs font-medium text-white hover:bg-accent/90"
         :disabled="!keyInput.trim()"
       >
-        Connect
+        {{ t('provider.connect') }}
       </button>
     </form>
 
@@ -92,11 +94,12 @@ function save() {
       />
 
       <p class="text-center text-[10px] leading-relaxed text-muted">
-        Uses your existing {{ acpAgent?.name }} subscription. Make sure
-        <code class="rounded bg-input px-1 py-0.5 font-mono text-[9px]">{{
-          acpAgent?.command
-        }}</code>
-        is installed and authenticated.
+        {{
+          t('provider.usesExistingSubscription', {
+            name: acpAgent?.name ?? '',
+            command: acpAgent?.command ?? ''
+          })
+        }}
       </p>
     </div>
 
@@ -107,14 +110,14 @@ function save() {
       data-test-id="api-key-get-link"
       class="mt-2.5 text-[10px] text-muted underline hover:text-surface"
     >
-      Get an {{ providerDef.name }} API key →
+      {{ t('provider.getNamedApiKey', { name: providerDef.name }) }}
     </a>
 
     <p
       v-if="providerID === 'openrouter'"
       class="mt-3 text-center text-[10px] leading-relaxed text-muted/50"
     >
-      One key for 100+ models from all providers.
+      {{ t('provider.openrouterHint') }}
     </p>
   </div>
 </template>

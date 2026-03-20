@@ -24,6 +24,7 @@ import IconGroup from '~icons/lucide/group'
 import IconUngroup from '~icons/lucide/ungroup'
 import IconLock from '~icons/lucide/lock'
 
+import { useUII18n } from '@/composables/use-ui-i18n'
 import { menuContent, menuItem } from '@/components/ui/menu'
 import { ACTION_TOAST_DURATION } from '@/constants'
 import { TOOLS, useEditorStore } from '@/stores/editor'
@@ -33,21 +34,22 @@ import type { Component } from 'vue'
 import type { Tool, ToolDef } from '@/stores/editor'
 
 const store = useEditorStore()
+const { t } = useUII18n()
 const breakpoints = useBreakpoints({ mobile: 768 })
 const isMobile = breakpoints.smaller('mobile')
 
-const toolLabels: Record<Tool, string> = {
-  SELECT: 'Move',
-  FRAME: 'Frame',
-  SECTION: 'Section',
-  RECTANGLE: 'Rectangle',
-  ELLIPSE: 'Ellipse',
-  LINE: 'Line',
-  POLYGON: 'Polygon',
-  STAR: 'Star',
-  PEN: 'Pen',
-  TEXT: 'Text',
-  HAND: 'Hand'
+const toolLabelKeys: Record<Tool, string> = {
+  SELECT: 'tool.select',
+  FRAME: 'tool.frame',
+  SECTION: 'tool.section',
+  RECTANGLE: 'tool.rectangle',
+  ELLIPSE: 'tool.ellipse',
+  LINE: 'tool.line',
+  POLYGON: 'tool.polygon',
+  STAR: 'tool.star',
+  PEN: 'tool.pen',
+  TEXT: 'tool.text',
+  HAND: 'tool.hand'
 }
 
 const toolShortcuts: Record<Tool, string> = {
@@ -74,27 +76,67 @@ function activeKeyForTool(tool: ToolDef): Tool {
   return tool.key
 }
 
+function toolLabel(tool: Tool) {
+  return t(toolLabelKeys[tool])
+}
+
 interface ActionItem {
+  id: string
   icon: Component
   label: string
   action: () => void
 }
 
-const editActions: ActionItem[] = [
-  { icon: IconCopy, label: 'Copy', action: () => store.mobileCopy() },
-  { icon: IconClipboard, label: 'Paste', action: () => store.mobilePaste() },
-  { icon: IconScissors, label: 'Cut', action: () => store.mobileCut() },
-  { icon: IconCopyPlus, label: 'Duplicate', action: () => store.duplicateSelected() },
-  { icon: IconTrash2, label: 'Delete', action: () => store.deleteSelected() }
-]
+const editActions = computed<ActionItem[]>(() => [
+  { id: 'copy', icon: IconCopy, label: t('menu.edit.copy'), action: () => store.mobileCopy() },
+  {
+    id: 'paste',
+    icon: IconClipboard,
+    label: t('menu.edit.paste'),
+    action: () => store.mobilePaste()
+  },
+  { id: 'cut', icon: IconScissors, label: t('menu.edit.cut'), action: () => store.mobileCut() },
+  {
+    id: 'duplicate',
+    icon: IconCopyPlus,
+    label: t('menu.edit.duplicate'),
+    action: () => store.duplicateSelected()
+  },
+  {
+    id: 'delete',
+    icon: IconTrash2,
+    label: t('menu.edit.delete'),
+    action: () => store.deleteSelected()
+  }
+])
 
-const arrangeActions: ActionItem[] = [
-  { icon: IconArrowUpToLine, label: 'Front', action: () => store.bringToFront() },
-  { icon: IconArrowDownToLine, label: 'Back', action: () => store.sendToBack() },
-  { icon: IconGroup, label: 'Group', action: () => store.groupSelected() },
-  { icon: IconUngroup, label: 'Ungroup', action: () => store.ungroupSelected() },
-  { icon: IconLock, label: 'Lock', action: () => store.toggleLock() }
-]
+const arrangeActions = computed<ActionItem[]>(() => [
+  {
+    id: 'front',
+    icon: IconArrowUpToLine,
+    label: t('menu.object.bringToFront'),
+    action: () => store.bringToFront()
+  },
+  {
+    id: 'back',
+    icon: IconArrowDownToLine,
+    label: t('menu.object.sendToBack'),
+    action: () => store.sendToBack()
+  },
+  {
+    id: 'group',
+    icon: IconGroup,
+    label: t('menu.object.group'),
+    action: () => store.groupSelected()
+  },
+  {
+    id: 'ungroup',
+    icon: IconUngroup,
+    label: t('menu.object.ungroup'),
+    action: () => store.ungroupSelected()
+  },
+  { id: 'lock', icon: IconLock, label: t('menu.object.lock'), action: () => store.toggleLock() }
+])
 
 const CATEGORY_COUNT = 3
 const mobileCategory = ref(0)
@@ -149,7 +191,7 @@ function goNext() {
                 ? 'bg-accent text-white'
                 : 'bg-transparent text-muted hover:bg-hover hover:text-surface'
             "
-            :title="`${toolLabels[activeKeyForTool(tool)]} (${tool.shortcut})`"
+            :title="`${toolLabel(activeKeyForTool(tool))} (${tool.shortcut})`"
             @click="store.setTool(activeKeyForTool(tool))"
           >
             <component :is="toolIcons[activeKeyForTool(tool)]" class="size-4" />
@@ -189,7 +231,7 @@ function goNext() {
                   @select="store.setTool(sub)"
                 >
                   <component :is="toolIcons[sub]" class="size-3.5" />
-                  <span class="flex-1">{{ toolLabels[sub] }}</span>
+                  <span class="flex-1">{{ toolLabel(sub) }}</span>
                   <span v-if="toolShortcuts[sub]" class="text-[11px] text-muted">{{
                     toolShortcuts[sub]
                   }}</span>
@@ -208,7 +250,7 @@ function goNext() {
               ? 'bg-accent text-white'
               : 'bg-transparent text-muted hover:bg-hover hover:text-surface'
           "
-          :title="`${toolLabels[tool.key]} (${tool.shortcut})`"
+          :title="`${toolLabel(tool.key)} (${tool.shortcut})`"
           @click="store.setTool(tool.key)"
         >
           <component :is="toolIcons[tool.key]" class="size-4" />
@@ -305,7 +347,7 @@ function goNext() {
                       @select="store.setTool(sub)"
                     >
                       <component :is="toolIcons[sub]" class="size-3.5" />
-                      <span class="flex-1">{{ toolLabels[sub] }}</span>
+                      <span class="flex-1">{{ toolLabel(sub) }}</span>
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenuPortal>
@@ -342,7 +384,7 @@ function goNext() {
           <button
             v-for="item in editActions"
             :key="item.label"
-            :data-test-id="`mobile-toolbar-${item.label.toLowerCase()}`"
+            :data-test-id="`mobile-toolbar-${item.id}`"
             class="flex size-8 cursor-pointer items-center justify-center rounded-[6px] border-none bg-transparent text-muted transition-colors select-none active:bg-hover active:text-surface"
             @click="onActionTap(item)"
           >
@@ -364,7 +406,7 @@ function goNext() {
           <button
             v-for="item in arrangeActions"
             :key="item.label"
-            :data-test-id="`mobile-toolbar-${item.label.toLowerCase()}`"
+            :data-test-id="`mobile-toolbar-${item.id}`"
             class="flex size-8 cursor-pointer items-center justify-center rounded-[6px] border-none bg-transparent text-muted transition-colors select-none active:bg-hover active:text-surface"
             @click="onActionTap(item)"
           >

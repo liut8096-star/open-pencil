@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
+import { useUII18n } from '@/composables/use-ui-i18n'
 import { useEditorStore } from '@/stores/editor'
 
 import VariablesDialog from './VariablesDialog.vue'
@@ -16,6 +17,7 @@ import TypographySection from './properties/TypographySection.vue'
 import VariablesSection from './properties/VariablesSection.vue'
 
 const store = useEditorStore()
+const { t } = useUII18n()
 const variablesOpen = ref(false)
 
 const node = computed(() => store.selectedNode.value)
@@ -37,8 +39,8 @@ const isComponentType = computed(() => {
       data-test-id="design-multi-header"
       class="flex items-center gap-1.5 border-b border-border px-3 py-2"
     >
-      <span class="text-[11px] text-muted">Mixed</span>
-      <span class="text-xs font-semibold">{{ multiCount }} layers</span>
+      <span class="text-[11px] text-muted">{{ t('design.mixed') }}</span>
+      <span class="text-xs font-semibold">{{ t('design.layers', { count: multiCount }) }}</span>
     </div>
     <PositionSection />
     <AppearanceSection />
@@ -73,14 +75,14 @@ const isComponentType = computed(() => {
         class="rounded bg-component/10 px-2 py-1 text-left text-[11px] text-component hover:bg-component/20"
         @click="store.goToMainComponent()"
       >
-        Go to Main Component
+        {{ t('design.goToMainComponent') }}
       </button>
       <button
         data-test-id="design-detach-instance"
         class="rounded px-2 py-1 text-left text-[11px] text-muted hover:bg-hover"
         @click="store.detachInstance()"
       >
-        Detach Instance
+        {{ t('design.detachInstance') }}
       </button>
     </div>
 

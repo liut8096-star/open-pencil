@@ -15,6 +15,7 @@ import {
 
 import FillPicker from '@/components/FillPicker.vue'
 import ScrubInput from '@/components/ScrubInput.vue'
+import { useUII18n } from '@/composables/use-ui-i18n'
 import { useNodeProps } from '@/composables/use-node-props'
 import { useMultiProps } from '@/composables/use-multi-props'
 import { DEFAULT_SHAPE_FILL } from '@/constants'
@@ -22,7 +23,18 @@ import { colorToCSS, colorToHexRaw } from '@open-pencil/core'
 import type { Fill, Variable, Color } from '@open-pencil/core'
 
 const { store } = useNodeProps()
-const { nodes, isMulti, active, activeNode, targetNodes, isArrayMixed, updateArrayItem, removeArrayItem, toggleArrayVisibility } = useMultiProps()
+const {
+  nodes,
+  isMulti,
+  active,
+  activeNode,
+  targetNodes,
+  isArrayMixed,
+  updateArrayItem,
+  removeArrayItem,
+  toggleArrayVisibility
+} = useMultiProps()
+const { t } = useUII18n()
 
 const fillsAreMixed = computed(() => isArrayMixed('fills'))
 
@@ -60,7 +72,12 @@ function updateFill(index: number, fill: Fill) {
 }
 
 function updateOpacity(index: number, opacity: number) {
-  updateArrayItem('fills', index, { opacity: Math.max(0, Math.min(1, opacity / 100)) }, 'Change fill')
+  updateArrayItem(
+    'fills',
+    index,
+    { opacity: Math.max(0, Math.min(1, opacity / 100)) },
+    'Change fill'
+  )
 }
 
 function toggleVisibility(index: number) {
@@ -69,7 +86,9 @@ function toggleVisibility(index: number) {
 
 function add() {
   for (const n of targetNodes()) {
-    const fills = isMulti.value ? [{ ...DEFAULT_SHAPE_FILL }] : [...n.fills, { ...DEFAULT_SHAPE_FILL }]
+    const fills = isMulti.value
+      ? [{ ...DEFAULT_SHAPE_FILL }]
+      : [...n.fills, { ...DEFAULT_SHAPE_FILL }]
     store.updateNodeWithUndo(n.id, { fills }, isMulti.value ? 'Set fill' : 'Add fill')
   }
 }
@@ -84,12 +103,22 @@ const filteredVariables = computed(() => {
   if (!searchTerm.value) return colorVariables.value
   return colorVariables.value.filter((v) => contains(v.name, searchTerm.value))
 })
+
+function fillSummary(fill: Fill): string {
+  if (fill.type === 'SOLID') return colorToHexRaw(fill.color)
+  if (fill.type === 'IMAGE') return t('fillpicker.image')
+  if (fill.type === 'GRADIENT_LINEAR') return t('fillpicker.linear')
+  if (fill.type === 'GRADIENT_RADIAL') return t('fillpicker.radial')
+  if (fill.type === 'GRADIENT_ANGULAR') return t('fillpicker.angular')
+  if (fill.type === 'GRADIENT_DIAMOND') return t('fillpicker.diamond')
+  return fill.type
+}
 </script>
 
 <template>
   <div v-if="active" data-test-id="fill-section" class="border-b border-border px-3 py-2">
     <div class="flex items-center justify-between">
-      <label class="mb-1 block text-[11px] text-muted">Fill</label>
+      <label class="mb-1 block text-[11px] text-muted">{{ t('prop.fill') }}</label>
       <button
         data-test-id="fill-section-add"
         class="flex size-5 cursor-pointer items-center justify-center rounded border-none bg-transparent text-sm leading-none text-muted hover:bg-hover hover:text-surface"
@@ -98,7 +127,9 @@ const filteredVariables = computed(() => {
         +
       </button>
     </div>
-    <p v-if="fillsAreMixed" class="text-[11px] text-muted">Click + to replace mixed fills</p>
+    <p v-if="fillsAreMixed" class="text-[11px] text-muted">
+      {{ t('prop.clickReplaceMixedFills') }}
+    </p>
     <div
       v-for="(fill, i) in fillsAreMixed ? [] : (activeNode?.fills ?? [])"
       :key="i"
@@ -118,20 +149,14 @@ const filteredVariables = computed(() => {
         <button
           data-test-id="fill-unbind-variable"
           class="cursor-pointer border-none bg-transparent p-0 text-violet-400 hover:text-surface"
-          title="Detach variable"
+          :title="t('prop.detachVariable')"
           @click="unbindVariable(i)"
         >
           <icon-lucide-unlink class="size-3" />
         </button>
       </template>
       <template v-else>
-        <span class="min-w-0 flex-1 font-mono text-xs text-surface">
-          <template v-if="fill.type === 'SOLID'">{{ colorToHexRaw(fill.color) }}</template>
-          <template v-else-if="fill.type.startsWith('GRADIENT')">{{
-            fill.type.replace('GRADIENT_', '')
-          }}</template>
-          <template v-else>{{ fill.type }}</template>
-        </span>
+        <span class="min-w-0 flex-1 font-mono text-xs text-surface">{{ fillSummary(fill) }}</span>
       </template>
 
       <ScrubInput
@@ -149,7 +174,7 @@ const filteredVariables = computed(() => {
       >
         <PopoverTrigger
           class="cursor-pointer border-none bg-transparent p-0 text-muted hover:text-surface"
-          title="Apply variable"
+          :title="t('prop.applyVariable')"
         >
           <icon-lucide-link class="size-3.5" />
         </PopoverTrigger>
@@ -162,12 +187,12 @@ const filteredVariables = computed(() => {
             <ComboboxRoot @update:model-value="bindVariable(i, ($event as Variable).id)">
               <ComboboxInput
                 v-model="searchTerm"
-                placeholder="Search variables…"
+                :placeholder="t('prop.searchVariables')"
                 class="w-full border-b border-border bg-transparent px-2 py-1.5 text-[11px] text-surface outline-none placeholder:text-muted"
               />
               <ComboboxContent class="max-h-48 overflow-y-auto p-1">
                 <ComboboxEmpty class="px-2 py-3 text-center text-[11px] text-muted">
-                  No variables found
+                  {{ t('prop.noVariablesFound') }}
                 </ComboboxEmpty>
                 <ComboboxItem
                   v-for="v in filteredVariables"

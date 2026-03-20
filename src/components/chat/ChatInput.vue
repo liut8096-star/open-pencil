@@ -20,10 +20,12 @@ import { uiButton } from '@/components/ui/button'
 import { uiInput } from '@/components/ui/input'
 import { selectContent, selectItem, selectTrigger } from '@/components/ui/select'
 import { useAIChat } from '@/composables/use-chat'
+import { useUII18n } from '@/composables/use-ui-i18n'
 
 import { ACP_AGENTS } from '@open-pencil/core'
 
 const { providerID, providerDef, modelID, customModelID } = useAIChat()
+const { t } = useUII18n()
 
 const { status } = defineProps<{
   status: 'ready' | 'submitted' | 'streaming' | 'error'
@@ -134,7 +136,7 @@ function handleSubmit(e: Event) {
           v-model="input"
           type="text"
           data-test-id="chat-input"
-          placeholder="Describe a change…"
+          :placeholder="t('chat.inputPlaceholder')"
           :class="uiInput({ class: 'min-w-0 flex-1 placeholder:text-muted' })"
           :disabled="isStreaming"
           @paste.stop
@@ -165,7 +167,7 @@ function handleSubmit(e: Event) {
               :side-offset="4"
               class="rounded bg-surface px-2 py-1 text-[10px] text-canvas"
             >
-              Stop generating
+              {{ t('chat.stopGenerating') }}
             </TooltipContent>
           </TooltipPortal>
         </TooltipRoot>
@@ -193,7 +195,7 @@ function handleSubmit(e: Event) {
               :side-offset="4"
               class="rounded bg-surface px-2 py-1 text-[10px] text-canvas"
             >
-              Send message
+              {{ t('chat.sendMessage') }}
             </TooltipContent>
           </TooltipPortal>
         </TooltipRoot>

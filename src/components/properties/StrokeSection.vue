@@ -5,6 +5,7 @@ import AppSelect from '@/components/AppSelect.vue'
 import { menuContent, menuItem } from '@/components/ui/menu'
 import ColorInput from '@/components/ColorInput.vue'
 import ScrubInput from '@/components/ScrubInput.vue'
+import { useUII18n } from '@/composables/use-ui-i18n'
 import { useNodeProps } from '@/composables/use-node-props'
 import { useMultiProps } from '@/composables/use-multi-props'
 import {
@@ -20,15 +21,26 @@ import type { Color, SceneNode, Stroke } from '@open-pencil/core'
 type StrokeSides = 'ALL' | 'TOP' | 'BOTTOM' | 'LEFT' | 'RIGHT' | 'CUSTOM'
 
 const { store } = useNodeProps()
-const { nodes, isMulti, active, activeNode, targetNodes, isArrayMixed, updateArrayItem, removeArrayItem, toggleArrayVisibility } = useMultiProps()
+const {
+  nodes,
+  isMulti,
+  active,
+  activeNode,
+  targetNodes,
+  isArrayMixed,
+  updateArrayItem,
+  removeArrayItem,
+  toggleArrayVisibility
+} = useMultiProps()
+const { t } = useUII18n()
 
 const strokesAreMixed = computed(() => isArrayMixed('strokes'))
 
-const ALIGN_OPTIONS: { value: Stroke['align']; label: string }[] = [
-  { value: 'INSIDE', label: 'Inside' },
-  { value: 'CENTER', label: 'Center' },
-  { value: 'OUTSIDE', label: 'Outside' }
-]
+const ALIGN_OPTIONS = computed<{ value: Stroke['align']; label: string }[]>(() => [
+  { value: 'INSIDE', label: t('prop.inside') },
+  { value: 'CENTER', label: t('prop.center') },
+  { value: 'OUTSIDE', label: t('prop.outside') }
+])
 
 const currentAlign = computed<Stroke['align']>(() => {
   const n = activeNode.value
@@ -67,7 +79,12 @@ function updateWeight(index: number, weight: number) {
 }
 
 function updateOpacity(index: number, opacity: number) {
-  updateArrayItem('strokes', index, { opacity: Math.max(0, Math.min(1, opacity / 100)) }, 'Change stroke')
+  updateArrayItem(
+    'strokes',
+    index,
+    { opacity: Math.max(0, Math.min(1, opacity / 100)) },
+    'Change stroke'
+  )
 }
 
 function updateAlign(align: Stroke['align']) {
@@ -167,14 +184,14 @@ function updateBorderWeight(side: 'top' | 'right' | 'bottom' | 'left', value: nu
   }
 }
 
-const SIDE_OPTIONS: { value: StrokeSides; label: string }[] = [
-  { value: 'ALL', label: 'All' },
-  { value: 'TOP', label: 'Top' },
-  { value: 'BOTTOM', label: 'Bottom' },
-  { value: 'LEFT', label: 'Left' },
-  { value: 'RIGHT', label: 'Right' },
-  { value: 'CUSTOM', label: 'Custom' }
-]
+const SIDE_OPTIONS = computed<{ value: StrokeSides; label: string }[]>(() => [
+  { value: 'ALL', label: t('prop.all') },
+  { value: 'TOP', label: t('prop.top') },
+  { value: 'BOTTOM', label: t('prop.bottom') },
+  { value: 'LEFT', label: t('prop.left') },
+  { value: 'RIGHT', label: t('prop.right') },
+  { value: 'CUSTOM', label: t('prop.custom') }
+])
 
 const BORDER_SIDES = ['top', 'right', 'bottom', 'left'] as const
 
@@ -192,7 +209,7 @@ const borderWeights = computed(() => {
 <template>
   <div v-if="active" data-test-id="stroke-section" class="border-b border-border px-3 py-2">
     <div class="flex items-center justify-between">
-      <label class="mb-1 block text-[11px] text-muted">Stroke</label>
+      <label class="mb-1 block text-[11px] text-muted">{{ t('prop.stroke') }}</label>
       <button
         data-test-id="stroke-section-add"
         class="flex size-5 cursor-pointer items-center justify-center rounded border-none bg-transparent text-sm leading-none text-muted hover:bg-hover hover:text-surface"
@@ -202,7 +219,9 @@ const borderWeights = computed(() => {
       </button>
     </div>
 
-    <p v-if="strokesAreMixed" class="text-[11px] text-muted">Click + to replace mixed strokes</p>
+    <p v-if="strokesAreMixed" class="text-[11px] text-muted">
+      {{ t('prop.clickReplaceMixedStrokes') }}
+    </p>
 
     <!-- Color row per stroke -->
     <div
@@ -267,7 +286,7 @@ const borderWeights = computed(() => {
           <button
             class="flex size-[26px] shrink-0 cursor-pointer items-center justify-center rounded border border-border bg-input text-muted hover:bg-hover hover:text-surface"
             :class="{ '!border-accent !text-accent': activeNode?.independentStrokeWeights }"
-            title="Stroke sides"
+            :title="t('prop.strokeSides')"
           >
             <svg class="size-3.5" viewBox="0 0 14 14" fill="currentColor">
               <rect x="1" y="1" width="5" height="5" rx="1" />

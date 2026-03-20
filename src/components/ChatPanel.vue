@@ -10,6 +10,7 @@ import ChatInput from '@/components/chat/ChatInput.vue'
 import ChatMessage from '@/components/chat/ChatMessage.vue'
 import ProviderSetup from '@/components/chat/ProviderSetup.vue'
 import { useAIChat } from '@/composables/use-chat'
+import { useUII18n } from '@/composables/use-ui-i18n'
 
 import type { Chat } from '@ai-sdk/vue'
 import type { UIMessage } from 'ai'
@@ -17,6 +18,7 @@ import type { UIMessage } from 'ai'
 const IS_DEV = import.meta.env.DEV
 
 const { isConfigured, ensureChat, resetChat } = useAIChat()
+const { t } = useUII18n()
 
 const chat = ref<Chat<UIMessage> | null>(null)
 
@@ -120,7 +122,7 @@ function handleClearChat() {
             class="flex h-full flex-col items-center justify-center gap-3 text-muted"
           >
             <icon-lucide-message-circle class="size-8 opacity-50" />
-            <p class="text-center text-xs">Describe what you want to create or change.</p>
+            <p class="text-center text-xs">{{ t('chat.empty') }}</p>
           </div>
 
           <!-- Messages -->
@@ -154,10 +156,10 @@ function handleClearChat() {
             <div v-if="showContinue" class="flex justify-center py-2">
               <button
                 class="flex items-center gap-1.5 rounded-full bg-accent/10 px-4 py-1.5 text-xs font-medium text-accent transition-colors hover:bg-accent/20"
-                @click="handleSubmit('Continue where you left off')"
+                @click="handleSubmit(t('chat.continuePrompt'))"
               >
                 <icon-lucide-play class="size-3" />
-                Continue
+                {{ t('chat.continue') }}
               </button>
             </div>
 
@@ -181,7 +183,7 @@ function handleClearChat() {
         >
           <icon-lucide-clipboard-copy v-if="!debugCopied" class="size-3" />
           <icon-lucide-check v-else class="size-3 text-green-400" />
-          {{ debugCopied ? 'Copied' : 'Copy log' }}
+          {{ debugCopied ? t('code.copied') : t('chat.copyLog') }}
         </button>
         <button
           v-if="IS_DEV && hasAcpDebugEntries()"
@@ -190,14 +192,14 @@ function handleClearChat() {
         >
           <icon-lucide-bug v-if="!acpLogCopied" class="size-3" />
           <icon-lucide-check v-else class="size-3 text-green-400" />
-          {{ acpLogCopied ? 'Copied' : 'ACP log' }}
+          {{ acpLogCopied ? t('code.copied') : t('chat.acpLog') }}
         </button>
         <button
           class="flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] text-muted hover:bg-hover hover:text-surface"
           @click="handleClearChat"
         >
           <icon-lucide-trash-2 class="size-3" />
-          Clear
+          {{ t('chat.clear') }}
         </button>
       </div>
 

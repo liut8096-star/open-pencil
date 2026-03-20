@@ -19,6 +19,7 @@ import {
 
 import HsvColorArea from './HsvColorArea.vue'
 import ScrubInput from './ScrubInput.vue'
+import { useUII18n } from '@/composables/use-ui-i18n'
 import { useEditorStore } from '@/stores/editor'
 import { colorToCSS, colorToHexRaw, parseColor } from '@open-pencil/core'
 
@@ -37,13 +38,6 @@ type GradientSubtype =
   | 'GRADIENT_ANGULAR'
   | 'GRADIENT_DIAMOND'
 
-const GRADIENT_SUBTYPES: { type: GradientSubtype; label: string }[] = [
-  { type: 'GRADIENT_LINEAR', label: 'Linear' },
-  { type: 'GRADIENT_RADIAL', label: 'Radial' },
-  { type: 'GRADIENT_ANGULAR', label: 'Angular' },
-  { type: 'GRADIENT_DIAMOND', label: 'Diamond' }
-]
-
 const DEFAULT_GRADIENT_TRANSFORMS: Record<GradientSubtype, GradientTransform> = {
   GRADIENT_LINEAR: { m00: 1, m01: 0, m02: 0, m10: 0, m11: 0, m12: 0.5 },
   GRADIENT_RADIAL: { m00: 0.5, m01: 0, m02: 0.5, m10: 0, m11: 0.5, m12: 0.5 },
@@ -58,6 +52,7 @@ const { fill } = defineProps<{
 const emit = defineEmits<{
   update: [fill: Fill]
 }>()
+const { t } = useUII18n()
 
 const activeStopIndex = ref(0)
 
@@ -221,12 +216,19 @@ function stopSwatchColor(stop: GradientStop) {
   return colorToCSS(stop.color)
 }
 
-const IMAGE_SCALE_MODES: { value: ImageScaleMode; label: string }[] = [
-  { value: 'FILL', label: 'Fill' },
-  { value: 'FIT', label: 'Fit' },
-  { value: 'CROP', label: 'Crop' },
-  { value: 'TILE', label: 'Tile' }
-]
+const GRADIENT_SUBTYPES = computed<{ type: GradientSubtype; label: string }[]>(() => [
+  { type: 'GRADIENT_LINEAR', label: t('fillpicker.linear') },
+  { type: 'GRADIENT_RADIAL', label: t('fillpicker.radial') },
+  { type: 'GRADIENT_ANGULAR', label: t('fillpicker.angular') },
+  { type: 'GRADIENT_DIAMOND', label: t('fillpicker.diamond') }
+])
+
+const IMAGE_SCALE_MODES = computed<{ value: ImageScaleMode; label: string }[]>(() => [
+  { value: 'FILL', label: t('fillpicker.scaleFill') },
+  { value: 'FIT', label: t('fillpicker.scaleFit') },
+  { value: 'CROP', label: t('fillpicker.scaleCrop') },
+  { value: 'TILE', label: t('fillpicker.scaleTile') }
+])
 
 const store = useEditorStore()
 
@@ -291,7 +293,7 @@ function setScaleMode(mode: string) {
             class="flex size-6 cursor-pointer items-center justify-center rounded border-none p-0 text-muted transition-colors hover:bg-hover hover:text-surface"
             :class="{ 'bg-hover text-surface': fillCategory === 'SOLID' }"
             data-test-id="fill-picker-tab-solid"
-            title="Solid"
+            :title="t('fillpicker.solid')"
             @click="setCategory('SOLID')"
           >
             <svg class="size-3.5" viewBox="0 0 16 16">
@@ -302,7 +304,7 @@ function setScaleMode(mode: string) {
             class="flex size-6 cursor-pointer items-center justify-center rounded border-none p-0 text-muted transition-colors hover:bg-hover hover:text-surface"
             :class="{ 'bg-hover text-surface': fillCategory === 'GRADIENT' }"
             data-test-id="fill-picker-tab-gradient"
-            title="Gradient"
+            :title="t('fillpicker.gradient')"
             @click="setCategory('GRADIENT')"
           >
             <svg class="size-3.5" viewBox="0 0 16 16">
@@ -319,7 +321,7 @@ function setScaleMode(mode: string) {
             class="flex size-6 cursor-pointer items-center justify-center rounded border-none p-0 text-muted transition-colors hover:bg-hover hover:text-surface"
             :class="{ 'bg-hover text-surface': fillCategory === 'IMAGE' }"
             data-test-id="fill-picker-tab-image"
-            title="Image"
+            :title="t('fillpicker.image')"
             @click="setCategory('IMAGE')"
           >
             <icon-lucide-image class="size-3.5" />
@@ -387,11 +389,11 @@ function setScaleMode(mode: string) {
         <!-- Gradient stops list -->
         <div v-if="isGradient && fill.gradientStops?.length" class="mb-2">
           <div class="mb-1 flex items-center justify-between">
-            <span class="text-[11px] text-muted">Stops</span>
+            <span class="text-[11px] text-muted">{{ t('fillpicker.stops') }}</span>
             <button
               class="flex size-4 cursor-pointer items-center justify-center rounded border-none bg-transparent p-0 text-muted hover:text-surface"
               data-test-id="fill-picker-add-stop"
-              title="Add stop"
+              :title="t('fillpicker.addStop')"
               @click="addStop"
             >
               <icon-lucide-plus class="size-3" />
@@ -458,7 +460,7 @@ function setScaleMode(mode: string) {
             @click="pickImage"
           >
             <icon-lucide-image class="size-3" />
-            {{ fill.imageHash ? 'Replace' : 'Choose image' }}
+            {{ fill.imageHash ? t('fillpicker.replaceImage') : t('fillpicker.chooseImage') }}
           </button>
           <SelectRoot
             :model-value="fill.imageScaleMode ?? 'FILL'"

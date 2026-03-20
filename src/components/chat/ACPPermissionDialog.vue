@@ -16,8 +16,10 @@ import {
   rejectCurrentPermission,
   respondToPermission
 } from '@/ai/acp-permission'
+import { useUII18n } from '@/composables/use-ui-i18n'
 
 const open = computed(() => currentPermission.value !== null)
+const { t } = useUII18n()
 
 interface ToolCallInfo {
   title?: string
@@ -28,7 +30,7 @@ const toolCall = computed(
   (): ToolCallInfo => (currentPermission.value?.request.toolCall as ToolCallInfo) ?? {}
 )
 
-const toolName = computed(() => toolCall.value.title ?? 'Unknown tool')
+const toolName = computed(() => toolCall.value.title ?? t('acp.unknownTool'))
 
 const toolInput = computed(() => {
   const raw = toolCall.value.rawInput
@@ -62,12 +64,12 @@ function handleDismiss() {
         class="fixed top-1/2 left-1/2 z-50 w-80 -translate-x-1/2 -translate-y-1/2 rounded-lg border border-border bg-panel p-4 shadow-xl"
         @escape-key-down="handleDismiss"
       >
-        <AlertDialogTitle class="text-sm font-semibold text-surface">
-          Permission Request
-        </AlertDialogTitle>
+        <AlertDialogTitle class="text-sm font-semibold text-surface">{{
+          t('acp.permissionTitle')
+        }}</AlertDialogTitle>
 
         <AlertDialogDescription class="mt-2 text-xs text-muted">
-          <span class="font-medium text-surface">{{ toolName }}</span> is requesting permission.
+          {{ t('acp.permissionDescription', { toolName }) }}
         </AlertDialogDescription>
 
         <pre

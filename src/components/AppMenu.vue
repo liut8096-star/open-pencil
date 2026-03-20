@@ -1,5 +1,15 @@
 <script setup lang="ts">
 import {
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuItemIndicator,
+  DropdownMenuPortal,
+  DropdownMenuRoot,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
   MenubarCheckboxItem,
   MenubarContent,
   MenubarItem,
@@ -19,12 +29,16 @@ import IconChevronRight from '~icons/lucide/chevron-right'
 import { computed, ref } from 'vue'
 
 import { useInlineRename } from '@/composables/use-inline-rename'
+import { useUII18n } from '@/composables/use-ui-i18n'
+import { useUIPreferences } from '@/composables/use-ui-preferences'
 import { menuContent, menuItem, menuSeparator } from '@/components/ui/menu'
 import { IS_TAURI } from '@/constants'
 import { openFileDialog } from '@/composables/use-menu'
 import { useEditorStore } from '@/stores/editor'
 
 const store = useEditorStore()
+const { t, languageOptions } = useUII18n()
+const { locale, theme, setLocale, setTheme } = useUIPreferences()
 
 const DOCUMENT_NAME_ID = 'document-name'
 const rename = useInlineRename<'document-name'>((_id, name) => {
@@ -58,19 +72,19 @@ interface MenuItem {
   sub?: MenuItem[]
 }
 
-const fileMenu: MenuItem[] = [
+const fileMenu = computed<MenuItem[]>(() => [
   {
-    label: 'New',
+    label: t('menu.file.new'),
     shortcut: `${mod}N`,
     action: () => import('@/stores/tabs').then((m) => m.createTab())
   },
-  { label: 'Open…', shortcut: `${mod}O`, action: () => openFileDialog() },
+  { label: t('menu.file.open'), shortcut: `${mod}O`, action: () => openFileDialog() },
   { separator: true },
-  { label: 'Save', shortcut: `${mod}S`, action: () => store.saveFigFile() },
-  { label: 'Save as…', shortcut: `${mod}⇧S`, action: () => store.saveFigFileAs() },
+  { label: t('menu.file.save'), shortcut: `${mod}S`, action: () => store.saveFigFile() },
+  { label: t('menu.file.saveAs'), shortcut: `${mod}⇧S`, action: () => store.saveFigFileAs() },
   { separator: true },
   {
-    label: 'Export selection…',
+    label: t('menu.file.exportSelection'),
     shortcut: `${mod}⇧E`,
     action: () => {
       if (store.state.selectedIds.size > 0) store.exportSelection(1, 'PNG')
@@ -79,99 +93,146 @@ const fileMenu: MenuItem[] = [
   },
   { separator: true },
   {
-    label: 'Auto-save to local file',
-    get checked() {
-      return store.state.autosaveEnabled
-    },
-    onCheckedChange: (v: boolean) => {
-      store.state.autosaveEnabled = v
+    label: t('menu.file.autosave'),
+    checked: store.state.autosaveEnabled,
+    onCheckedChange: (value: boolean) => {
+      store.state.autosaveEnabled = value
     }
   }
-]
+])
 
-const editMenu: MenuItem[] = [
-  { label: 'Undo', shortcut: `${mod}Z`, action: () => store.undoAction() },
-  { label: 'Redo', shortcut: `${mod}⇧Z`, action: () => store.redoAction() },
+const editMenu = computed<MenuItem[]>(() => [
+  { label: t('menu.edit.undo'), shortcut: `${mod}Z`, action: () => store.undoAction() },
+  { label: t('menu.edit.redo'), shortcut: `${mod}⇧Z`, action: () => store.redoAction() },
   { separator: true },
-  { label: 'Copy', shortcut: `${mod}C` },
-  { label: 'Paste', shortcut: `${mod}V` },
-  { label: 'Duplicate', shortcut: `${mod}D`, action: () => store.duplicateSelected() },
-  { label: 'Delete', shortcut: '⌫', action: () => store.deleteSelected() },
+  { label: t('menu.edit.copy'), shortcut: `${mod}C` },
+  { label: t('menu.edit.paste'), shortcut: `${mod}V` },
+  { label: t('menu.edit.duplicate'), shortcut: `${mod}D`, action: () => store.duplicateSelected() },
+  { label: t('menu.edit.delete'), shortcut: '⌫', action: () => store.deleteSelected() },
   { separator: true },
-  { label: 'Select all', shortcut: `${mod}A`, action: () => store.selectAll() }
-]
+  { label: t('menu.edit.selectAll'), shortcut: `${mod}A`, action: () => store.selectAll() }
+])
 
-const viewMenu: MenuItem[] = [
-  { label: 'Zoom to 100%', shortcut: `${mod}0`, action: () => store.zoomTo100() },
-  { label: 'Zoom to fit', shortcut: `${mod}1`, action: () => store.zoomToFit() },
-  { label: 'Zoom to selection', shortcut: `${mod}2`, action: () => store.zoomToSelection() },
+const themeMenuItems = computed<MenuItem[]>(() => [
   {
-    label: 'Zoom in',
+    label: t('theme.system'),
+    checked: theme.value === 'system',
+    onCheckedChange: (checked: boolean) => {
+      if (checked) setTheme('system')
+    }
+  },
+  {
+    label: t('theme.light'),
+    checked: theme.value === 'light',
+    onCheckedChange: (checked: boolean) => {
+      if (checked) setTheme('light')
+    }
+  },
+  {
+    label: t('theme.dark'),
+    checked: theme.value === 'dark',
+    onCheckedChange: (checked: boolean) => {
+      if (checked) setTheme('dark')
+    }
+  }
+])
+
+const languageMenuItems = computed<MenuItem[]>(() =>
+  languageOptions.value.map((option) => ({
+    label: option.label,
+    checked: locale.value === option.value,
+    onCheckedChange: (checked: boolean) => {
+      if (checked) setLocale(option.value)
+    }
+  }))
+)
+
+const viewMenu = computed<MenuItem[]>(() => [
+  { label: t('menu.view.zoom100'), shortcut: `${mod}0`, action: () => store.zoomTo100() },
+  { label: t('menu.view.zoomFit'), shortcut: `${mod}1`, action: () => store.zoomToFit() },
+  {
+    label: t('menu.view.zoomSelection'),
+    shortcut: `${mod}2`,
+    action: () => store.zoomToSelection()
+  },
+  {
+    label: t('menu.view.zoomIn'),
     shortcut: `${mod}=`,
     action: () => store.applyZoom(-100, window.innerWidth / 2, window.innerHeight / 2)
   },
   {
-    label: 'Zoom out',
+    label: t('menu.view.zoomOut'),
     shortcut: `${mod}-`,
     action: () => store.applyZoom(100, window.innerWidth / 2, window.innerHeight / 2)
   },
   { separator: true },
   {
-    label: 'Performance profiler',
-    get checked() {
-      return store.renderer?.profiler.hudVisible ?? false
-    },
+    label: t('menu.view.performanceProfiler'),
+    checked: store.renderer?.profiler.hudVisible ?? false,
     onCheckedChange: () => {
       store.toggleProfiler()
     }
-  }
-]
-
-const objectMenu: MenuItem[] = [
-  { label: 'Group', shortcut: `${mod}G`, action: () => store.groupSelected() },
-  { label: 'Ungroup', shortcut: `${mod}⇧G`, action: () => store.ungroupSelected() },
+  },
   { separator: true },
   {
-    label: 'Create component',
+    label: t('theme.label'),
+    sub: themeMenuItems.value
+  },
+  {
+    label: t('language.label'),
+    sub: languageMenuItems.value
+  }
+])
+
+const objectMenu = computed<MenuItem[]>(() => [
+  { label: t('menu.object.group'), shortcut: `${mod}G`, action: () => store.groupSelected() },
+  { label: t('menu.object.ungroup'), shortcut: `${mod}⇧G`, action: () => store.ungroupSelected() },
+  { separator: true },
+  {
+    label: t('menu.object.createComponent'),
     shortcut: `${mod}⌥K`,
     action: () => store.createComponentFromSelection()
   },
   {
-    label: 'Create component set',
+    label: t('menu.object.createComponentSet'),
     action: () => store.createComponentSetFromComponents()
   },
-  { label: 'Detach instance', action: () => store.detachInstance() },
+  { label: t('menu.object.detachInstance'), action: () => store.detachInstance() },
   { separator: true },
-  { label: 'Bring to front', shortcut: ']', action: () => store.bringToFront() },
-  { label: 'Send to back', shortcut: '[', action: () => store.sendToBack() }
-]
+  { label: t('menu.object.bringToFront'), shortcut: ']', action: () => store.bringToFront() },
+  { label: t('menu.object.sendToBack'), shortcut: '[', action: () => store.sendToBack() }
+])
 
-const textMenu: MenuItem[] = [
-  { label: 'Bold', shortcut: `${mod}B` },
-  { label: 'Italic', shortcut: `${mod}I` },
-  { label: 'Underline', shortcut: `${mod}U` }
-]
+const textMenu = computed<MenuItem[]>(() => [
+  { label: t('menu.text.bold'), shortcut: `${mod}B` },
+  { label: t('menu.text.italic'), shortcut: `${mod}I` },
+  { label: t('menu.text.underline'), shortcut: `${mod}U` }
+])
 
-const arrangeMenu: MenuItem[] = [
-  { label: 'Add auto layout', shortcut: '⇧A', action: () => store.wrapInAutoLayout() },
+const arrangeMenu = computed<MenuItem[]>(() => [
+  {
+    label: t('menu.arrange.addAutoLayout'),
+    shortcut: '⇧A',
+    action: () => store.wrapInAutoLayout()
+  },
   { separator: true },
-  { label: 'Align left', shortcut: '⌥A' },
-  { label: 'Align center', shortcut: '⌥H' },
-  { label: 'Align right', shortcut: '⌥D' },
+  { label: t('menu.arrange.alignLeft'), shortcut: '⌥A' },
+  { label: t('menu.arrange.alignCenter'), shortcut: '⌥H' },
+  { label: t('menu.arrange.alignRight'), shortcut: '⌥D' },
   { separator: true },
-  { label: 'Align top', shortcut: '⌥W' },
-  { label: 'Align middle', shortcut: '⌥V' },
-  { label: 'Align bottom', shortcut: '⌥S' }
-]
+  { label: t('menu.arrange.alignTop'), shortcut: '⌥W' },
+  { label: t('menu.arrange.alignMiddle'), shortcut: '⌥V' },
+  { label: t('menu.arrange.alignBottom'), shortcut: '⌥S' }
+])
 
-const topMenus = [
-  { label: 'File', items: fileMenu },
-  { label: 'Edit', items: editMenu },
-  { label: 'View', items: viewMenu },
-  { label: 'Object', items: objectMenu },
-  { label: 'Text', items: textMenu },
-  { label: 'Arrange', items: arrangeMenu }
-]
+const topMenus = computed(() => [
+  { id: 'file', label: t('menu.file'), items: fileMenu.value },
+  { id: 'edit', label: t('menu.edit'), items: editMenu.value },
+  { id: 'view', label: t('menu.view'), items: viewMenu.value },
+  { id: 'object', label: t('menu.object'), items: objectMenu.value },
+  { id: 'text', label: t('menu.text'), items: textMenu.value },
+  { id: 'arrange', label: t('menu.arrange'), items: arrangeMenu.value }
+])
 </script>
 
 <template>
@@ -195,10 +256,80 @@ const topMenus = [
         @dblclick="startRename"
         >{{ store.state.documentName }}</span
       >
+      <DropdownMenuRoot>
+        <DropdownMenuTrigger as-child>
+          <button
+            data-test-id="app-settings"
+            class="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded text-muted transition-colors hover:bg-hover hover:text-surface"
+            :title="t('theme.label')"
+          >
+            <icon-lucide-settings-2 class="size-3.5" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuPortal>
+          <DropdownMenuContent
+            :side-offset="6"
+            align="end"
+            :class="menuContent({ class: 'min-w-44' })"
+          >
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger :class="menuItem()">
+                <span class="flex-1">{{ t('theme.label') }}</span>
+                <IconChevronRight class="size-3 text-muted" />
+              </DropdownMenuSubTrigger>
+              <DropdownMenuPortal>
+                <DropdownMenuSubContent
+                  :side-offset="4"
+                  :class="menuContent({ class: 'min-w-36' })"
+                >
+                  <DropdownMenuCheckboxItem
+                    v-for="item in themeMenuItems"
+                    :key="item.label"
+                    :model-value="item.checked"
+                    :class="menuItem()"
+                    @update:model-value="item.onCheckedChange?.($event as boolean)"
+                  >
+                    <span class="flex-1">{{ item.label }}</span>
+                    <DropdownMenuItemIndicator class="text-surface">
+                      <icon-lucide-check class="size-3.5" />
+                    </DropdownMenuItemIndicator>
+                  </DropdownMenuCheckboxItem>
+                </DropdownMenuSubContent>
+              </DropdownMenuPortal>
+            </DropdownMenuSub>
+            <DropdownMenuSeparator :class="menuSeparator()" />
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger :class="menuItem()">
+                <span class="flex-1">{{ t('language.label') }}</span>
+                <IconChevronRight class="size-3 text-muted" />
+              </DropdownMenuSubTrigger>
+              <DropdownMenuPortal>
+                <DropdownMenuSubContent
+                  :side-offset="4"
+                  :class="menuContent({ class: 'min-w-36' })"
+                >
+                  <DropdownMenuCheckboxItem
+                    v-for="item in languageMenuItems"
+                    :key="item.label"
+                    :model-value="item.checked"
+                    :class="menuItem()"
+                    @update:model-value="item.onCheckedChange?.($event as boolean)"
+                  >
+                    <span class="flex-1">{{ item.label }}</span>
+                    <DropdownMenuItemIndicator class="text-surface">
+                      <icon-lucide-check class="size-3.5" />
+                    </DropdownMenuItemIndicator>
+                  </DropdownMenuCheckboxItem>
+                </DropdownMenuSubContent>
+              </DropdownMenuPortal>
+            </DropdownMenuSub>
+          </DropdownMenuContent>
+        </DropdownMenuPortal>
+      </DropdownMenuRoot>
       <button
         data-test-id="app-toggle-ui"
         class="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded text-muted transition-colors hover:bg-hover hover:text-surface"
-        title="Toggle UI (⌘\)"
+        :title="`${t('app.toggleUI')} (⌘\\)`"
         @click="store.state.showUI = !store.state.showUI"
       >
         <icon-lucide-sidebar class="size-3.5" />
@@ -206,9 +337,9 @@ const topMenus = [
     </div>
     <div v-if="!IS_TAURI" class="flex items-center px-1 pb-1">
       <MenubarRoot class="scrollbar-none flex items-center gap-0.5 overflow-x-auto">
-        <MenubarMenu v-for="menu in topMenus" :key="menu.label">
+        <MenubarMenu v-for="menu in topMenus" :key="menu.id">
           <MenubarTrigger
-            :data-test-id="`menubar-${menu.label.toLowerCase()}`"
+            :data-test-id="`menubar-${menu.id}`"
             class="flex cursor-pointer items-center rounded px-2 py-1 text-xs text-muted transition-colors select-none hover:bg-hover hover:text-surface data-[state=open]:bg-hover data-[state=open]:text-surface"
           >
             {{ menu.label }}
@@ -231,6 +362,17 @@ const topMenus = [
                     <MenubarSubContent :side-offset="4" :class="menuContent({ class: 'min-w-44' })">
                       <template v-for="(sub, j) in item.sub" :key="j">
                         <MenubarSeparator v-if="sub.separator" :class="menuSeparator()" />
+                        <MenubarCheckboxItem
+                          v-else-if="sub.onCheckedChange"
+                          :model-value="sub.checked"
+                          :class="menuItem()"
+                          @update:model-value="sub.onCheckedChange?.($event as boolean)"
+                        >
+                          <span class="flex-1">{{ sub.label }}</span>
+                          <MenubarItemIndicator class="text-surface">
+                            <icon-lucide-check class="size-3.5" />
+                          </MenubarItemIndicator>
+                        </MenubarCheckboxItem>
                         <MenubarItem
                           v-else
                           :class="menuItem()"

@@ -24,6 +24,7 @@ import IconType from '~icons/lucide/type'
 import IconToggleLeft from '~icons/lucide/toggle-left'
 import IconX from '~icons/lucide/x'
 import ColorInput from './ColorInput.vue'
+import { useUII18n } from '@/composables/use-ui-i18n'
 import { colorToHexRaw, parseColor, randomHex } from '@open-pencil/core'
 import { useEditorStore } from '@/stores/editor'
 import type { Variable, VariableCollection, VariableValue, Color } from '@open-pencil/core'
@@ -31,6 +32,7 @@ import type { Variable, VariableCollection, VariableValue, Color } from '@open-p
 const open = defineModel<boolean>('open', { default: false })
 const store = useEditorStore()
 const searchTerm = ref('')
+const { t } = useUII18n()
 
 const collections = computed(() => {
   void store.state.sceneVersion
@@ -194,7 +196,7 @@ function addVariable() {
 
   const variable: Variable = {
     id,
-    name: 'New variable',
+    name: t('variablesDialog.newVariable'),
     type: 'COLOR',
     collectionId: col.id,
     valuesByMode,
@@ -220,8 +222,8 @@ function addCollection() {
   const id = `col:${randomHex(8)}`
   const collection: VariableCollection = {
     id,
-    name: 'New collection',
-    modes: [{ modeId: 'default', name: 'Mode 1' }],
+    name: t('variablesDialog.newCollection'),
+    modes: [{ modeId: 'default', name: t('variablesDialog.modeName', { index: 1 }) }],
     defaultModeId: 'default',
     variableIds: []
   }
@@ -266,7 +268,7 @@ function removeVariable(id: string) {
 const columns = computed<ColumnDef<Variable>[]>(() => {
   const nameCol: ColumnDef<Variable> = {
     id: 'name',
-    header: 'Name',
+    header: t('variablesDialog.name'),
     size: 200,
     minSize: 120,
     maxSize: 400,
@@ -393,7 +395,9 @@ const table = useVueTable({
       >
         <div v-if="collections.length === 0" class="flex flex-1 flex-col">
           <div class="flex shrink-0 items-center justify-between border-b border-border px-4 py-3">
-            <DialogTitle class="text-sm font-semibold text-surface">Local variables</DialogTitle>
+            <DialogTitle class="text-sm font-semibold text-surface">{{
+              t('variablesDialog.localVariables')
+            }}</DialogTitle>
             <DialogClose
               class="flex size-6 cursor-pointer items-center justify-center rounded border-none bg-transparent text-muted hover:bg-hover hover:text-surface"
             >
@@ -402,13 +406,13 @@ const table = useVueTable({
           </div>
           <div class="flex flex-1 items-center justify-center">
             <div class="text-center">
-              <p class="text-sm text-muted">No variable collections</p>
+              <p class="text-sm text-muted">{{ t('variablesDialog.noCollections') }}</p>
               <button
                 data-test-id="variables-create-collection"
                 class="mt-2 cursor-pointer rounded bg-hover px-3 py-1.5 text-xs text-surface hover:bg-border"
                 @click="addCollection"
               >
-                Create collection
+                {{ t('variablesDialog.createCollection') }}
               </button>
             </div>
           </div>
@@ -448,13 +452,13 @@ const table = useVueTable({
                     v-model="searchTerm"
                     data-test-id="variables-search-input"
                     class="w-24 border-none bg-transparent text-xs text-surface outline-none placeholder:text-muted"
-                    placeholder="Search"
+                    :placeholder="t('variablesDialog.search')"
                   />
                 </div>
                 <button
                   data-test-id="variables-add-collection"
                   class="flex size-6 cursor-pointer items-center justify-center rounded border-none bg-transparent text-muted hover:bg-hover hover:text-surface"
-                  title="Add collection"
+                  :title="t('variablesDialog.addCollection')"
                   @click="addCollection"
                 >
                   <icon-lucide-folder-plus class="size-3.5" />
@@ -542,7 +546,7 @@ const table = useVueTable({
                 @click="addVariable"
               >
                 <icon-lucide-plus class="size-3.5" />
-                Create variable
+                {{ t('variablesDialog.createVariable') }}
               </button>
             </TabsContent>
           </TabsRoot>

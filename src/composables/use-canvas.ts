@@ -1,9 +1,11 @@
 import { useBreakpoints, useRafFn, useResizeObserver } from '@vueuse/core'
-import { onMounted, onUnmounted, type Ref } from 'vue'
+import { onMounted, onUnmounted, watch, type Ref } from 'vue'
 
+import { useUIPreferences } from '@/composables/use-ui-preferences'
 import { getCanvasKit, getGpuBackend, SkiaRenderer } from '@open-pencil/core'
 
 import type { EditorStore } from '@/stores/editor'
+import type { Color } from '@open-pencil/core'
 import type { CanvasKit } from 'canvaskit-wasm'
 
 interface WebGPUContext {
@@ -26,6 +28,18 @@ function asWebGPU(ck: CanvasKit): CanvasKitWebGPU {
   return ck as unknown as CanvasKitWebGPU
 }
 
+const DARK_RULER_COLORS = {
+  background: { r: 0.14, g: 0.14, b: 0.14, a: 1 },
+  tick: { r: 0.4, g: 0.4, b: 0.4, a: 1 },
+  text: { r: 0.55, g: 0.55, b: 0.55, a: 1 }
+} satisfies Record<'background' | 'tick' | 'text', Color>
+
+const LIGHT_RULER_COLORS = {
+  background: { r: 0.91, g: 0.94, b: 0.97, a: 1 },
+  tick: { r: 0.49, g: 0.55, b: 0.63, a: 1 },
+  text: { r: 0.24, g: 0.3, b: 0.39, a: 1 }
+} satisfies Record<'background' | 'tick' | 'text', Color>
+
 async function initWebGPU(ck: CanvasKit): Promise<WebGPUContext | null> {
   if (!('gpu' in navigator)) return null
   const adapter = await navigator.gpu.requestAdapter()
@@ -38,6 +52,7 @@ async function initWebGPU(ck: CanvasKit): Promise<WebGPUContext | null> {
 }
 
 export function useCanvas(canvasRef: Ref<HTMLCanvasElement | null>, store: EditorStore) {
+  const { resolvedTheme } = useUIPreferences()
   let renderer: SkiaRenderer | null = null
   let ck: CanvasKit | null = null
   let gpuCtx: WebGPUContext | null = null
@@ -138,6 +153,31 @@ export function useCanvas(canvasRef: Ref<HTMLCanvasElement | null>, store: Edito
 
   function renderNow() {
     if (!renderer || destroyed) return
+    const rulerColors = resolvedTheme.value === 'light' ? LIGHT_RULER_COLORS : DARK_RULER_COLORS
+    renderer.rulerBgPaint.setColor(
+      renderer.ck.Color4f(
+        rulerColors.background.r,
+        rulerColors.background.g,
+        rulerColors.background.b,
+        rulerColors.background.a
+      )
+    )
+    renderer.rulerTickPaint.setColor(
+      renderer.ck.Color4f(
+        rulerColors.tick.r,
+        rulerColors.tick.g,
+        rulerColors.tick.b,
+        rulerColors.tick.a
+      )
+    )
+    renderer.rulerTextPaint.setColor(
+      renderer.ck.Color4f(
+        rulerColors.text.r,
+        rulerColors.text.g,
+        rulerColors.text.b,
+        rulerColors.text.a
+      )
+    )
     renderer.dpr = window.devicePixelRatio || 1
     renderer.panX = store.state.panX
     renderer.panY = store.state.panY
@@ -187,6 +227,11 @@ export function useCanvas(canvasRef: Ref<HTMLCanvasElement | null>, store: Edito
 
   onMounted(() => {
     void init()
+  })
+
+  watch(resolvedTheme, () => {
+    dirty = true
+    renderNow()
   })
 
   onUnmounted(() => {

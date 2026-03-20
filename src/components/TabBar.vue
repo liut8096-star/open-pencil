@@ -2,9 +2,11 @@
 import { computed } from 'vue'
 import { TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
 
+import { useUII18n } from '@/composables/use-ui-i18n'
 import { useTabsStore, createTab } from '@/stores/tabs'
 
 const { tabs, activeTabId, switchTab, closeTab } = useTabsStore()
+const { t } = useUII18n()
 
 const modelValue = computed({
   get: () => activeTabId.value,
@@ -29,7 +31,7 @@ function onClose(e: MouseEvent, tabId: string) {
     v-if="tabs.length > 1"
     v-model="modelValue"
     activation-mode="automatic"
-    class="scrollbar-none flex h-9 shrink-0 items-end overflow-x-auto border-b border-border bg-[#1e1e1e]"
+    class="scrollbar-none flex h-9 shrink-0 items-end overflow-x-auto border-b border-border bg-canvas"
   >
     <TabsList class="flex h-full items-end">
       <TabsTrigger
@@ -46,8 +48,8 @@ function onClose(e: MouseEvent, tabId: string) {
           data-test-id="tabbar-close"
           class="flex size-4 shrink-0 cursor-pointer items-center justify-center rounded opacity-0 transition-opacity group-hover/tab:opacity-100 hover:bg-hover data-[state=active]:opacity-100"
           :class="tab.isActive ? 'opacity-100' : ''"
-          :title="`Close ${tab.name}`"
-          :aria-label="`Close ${tab.name}`"
+          :title="t('tab.close', { name: tab.name })"
+          :aria-label="t('tab.close', { name: tab.name })"
           tabindex="-1"
           @click="onClose($event, tab.id)"
         >
@@ -58,8 +60,8 @@ function onClose(e: MouseEvent, tabId: string) {
     <button
       data-test-id="tabbar-new"
       class="flex size-9 shrink-0 cursor-pointer items-center justify-center text-muted transition-colors hover:text-surface"
-      title="New tab"
-      aria-label="New tab"
+      :title="t('tab.new')"
+      :aria-label="t('tab.new')"
       @click="createTab()"
     >
       <icon-lucide-plus class="size-3.5" />

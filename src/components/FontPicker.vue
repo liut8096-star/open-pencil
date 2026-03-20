@@ -14,10 +14,12 @@ import {
 
 import { selectContent, selectItem, selectTrigger } from '@/components/ui/select'
 import { panelSurface } from '@/components/ui/surface'
+import { useUII18n } from '@/composables/use-ui-i18n'
 import { listFamilies } from '@/engine/fonts'
 
 const modelValue = defineModel<string>({ required: true })
 const emit = defineEmits<{ select: [family: string] }>()
+const { t } = useUII18n()
 
 const families = ref<string[]>([])
 const searchTerm = ref('')
@@ -80,7 +82,7 @@ function onSelect(val: string) {
             v-model="searchTerm"
             data-test-id="font-picker-search"
             class="min-w-0 flex-1 border-none bg-transparent text-xs text-surface outline-none placeholder:text-muted"
-            placeholder="Search fonts…"
+            :placeholder="t('fontpicker.search')"
             autocomplete="off"
             autocorrect="off"
             autocapitalize="off"
@@ -110,12 +112,12 @@ function onSelect(val: string) {
             class="flex h-full items-center justify-center px-3 text-center text-xs text-muted"
           >
             <div>
-              <p>No local fonts available.</p>
-              <p class="mt-1">Use the desktop app or Chrome/Edge to access system fonts.</p>
+              <p>{{ t('fontpicker.noLocalFonts') }}</p>
+              <p class="mt-1">{{ t('fontpicker.useDesktop') }}</p>
             </div>
           </div>
           <div v-else-if="filtered.length === 0" class="px-2 py-3 text-center text-xs text-muted">
-            No fonts found
+            {{ t('fontpicker.noFontsFound') }}
           </div>
         </ListboxContent>
       </ListboxRoot>

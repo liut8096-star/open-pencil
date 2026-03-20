@@ -15,12 +15,14 @@ import {
 
 import { colorToCSS } from '@open-pencil/core'
 import { useCollabInjected } from '@/composables/use-collab'
+import { useUII18n } from '@/composables/use-ui-i18n'
 import { toast } from '@/composables/use-toast'
 import { initials } from '@/utils/text'
 
 const route = useRoute()
 const router = useRouter()
 const collab = useCollabInjected()
+const { t } = useUII18n()
 
 const joinInput = ref('')
 const nameDraft = ref(collab.state.value.localName)
@@ -42,7 +44,7 @@ const isJoining = computed(() => !!pendingRoomId && !state.value.connected)
 function copyLink() {
   if (!shareUrl.value) return
   navigator.clipboard.writeText(shareUrl.value)
-  toast.show('Link copied to clipboard')
+  toast.show(t('collab.linkCopied'))
   copied.value = true
   setTimeout(() => {
     copied.value = false
@@ -55,7 +57,7 @@ function onShare() {
   const roomId = collab.shareCurrentDoc()
   router.push(`/share/${roomId}`)
   navigator.clipboard.writeText(`${window.location.origin}/share/${roomId}`)
-  toast.show('Link copied to clipboard')
+  toast.show(t('collab.linkCopied'))
   popoverOpen.value = false
 }
 
@@ -86,15 +88,15 @@ function onDisconnect() {
               class="flex size-6 items-center justify-center rounded-full border-2 border-panel text-[10px] font-semibold text-white"
               :style="{ background: colorToCSS(state.localColor) }"
             >
-              {{ initials(state.localName || 'You') }}
+              {{ initials(state.localName || t('collab.you')) }}
             </div>
           </TooltipTrigger>
           <TooltipPortal>
             <TooltipContent
-              class="rounded bg-neutral-800 px-2 py-1 text-xs text-white shadow-lg"
+              class="rounded border border-border bg-panel px-2 py-1 text-xs text-surface shadow-lg"
               :side-offset="4"
             >
-              {{ state.localName || 'You' }} (you)
+              {{ state.localName || t('collab.you') }} ({{ t('collab.youTag') }})
             </TooltipContent>
           </TooltipPortal>
         </TooltipRoot>
@@ -117,13 +119,13 @@ function onDisconnect() {
           </TooltipTrigger>
           <TooltipPortal>
             <TooltipContent
-              class="rounded bg-neutral-800 px-2 py-1 text-xs text-white shadow-lg"
+              class="rounded border border-border bg-panel px-2 py-1 text-xs text-surface shadow-lg"
               :side-offset="4"
             >
               {{
                 followingPeer === peer.clientId
-                  ? `Following ${peer.name} (click to stop)`
-                  : `Click to follow ${peer.name}`
+                  ? t('collab.followingPeer', { name: peer.name })
+                  : t('collab.followPeer', { name: peer.name })
               }}
             </TooltipContent>
           </TooltipPortal>
@@ -148,7 +150,13 @@ function onDisconnect() {
           "
         >
           <icon-lucide-share-2 class="size-3.5" />
-          {{ state.connected ? 'Connected' : isJoining ? 'Join room' : 'Share' }}
+          {{
+            state.connected
+              ? t('collab.connected')
+              : isJoining
+                ? t('collab.joinRoom')
+                : t('collab.share')
+          }}
         </button>
       </PopoverTrigger>
 
@@ -162,7 +170,7 @@ function onDisconnect() {
         >
           <!-- Connected state -->
           <template v-if="state.connected">
-            <div class="mb-3 text-xs font-medium text-surface">Room link</div>
+            <div class="mb-3 text-xs font-medium text-surface">{{ t('collab.roomLink') }}</div>
             <div class="mb-3 flex items-center gap-1.5">
               <input
                 :value="shareUrl"
@@ -178,12 +186,12 @@ function onDisconnect() {
               >
                 <icon-lucide-check v-if="copied" class="size-3" />
                 <icon-lucide-copy v-else class="size-3" />
-                {{ copied ? 'Copied' : 'Copy' }}
+                {{ copied ? t('collab.copied') : t('collab.copy') }}
               </button>
             </div>
 
             <div class="mb-2 text-xs font-medium text-surface">
-              {{ peers.length + 1 }} {{ peers.length === 0 ? 'person' : 'people' }} in this room
+              {{ t('collab.peopleCount', { count: peers.length + 1 }) }}
             </div>
 
             <button
@@ -191,24 +199,24 @@ function onDisconnect() {
               class="flex h-7 w-full cursor-pointer items-center justify-center rounded border border-border bg-transparent text-xs text-muted hover:bg-hover hover:text-surface"
               @click="onDisconnect"
             >
-              Disconnect
+              {{ t('collab.disconnect') }}
             </button>
           </template>
 
           <!-- Joining via /share/ link -->
           <template v-else-if="isJoining">
-            <div class="mb-1 text-xs font-medium text-surface">Join collaboration</div>
+            <div class="mb-1 text-xs font-medium text-surface">{{ t('collab.joinTitle') }}</div>
             <div class="mb-3 text-[11px] text-muted">
-              Someone shared this file with you. Enter your name to join.
+              {{ t('collab.joinDescription') }}
             </div>
 
             <div class="mb-3">
-              <label class="mb-1 block text-xs text-muted">Your name</label>
+              <label class="mb-1 block text-xs text-muted">{{ t('collab.yourName') }}</label>
               <input
                 v-model="nameDraft"
                 data-test-id="collab-name-input"
                 class="w-full rounded border border-border bg-input px-2 py-1 text-xs text-surface"
-                placeholder="Enter your name"
+                :placeholder="t('collab.enterYourName')"
                 autofocus
                 @keydown.enter="onJoin"
               />
@@ -221,19 +229,19 @@ function onDisconnect() {
               @click="onJoin"
             >
               <icon-lucide-users class="size-3.5" />
-              Join room
+              {{ t('collab.joinRoom') }}
             </button>
           </template>
 
           <!-- Not connected: share or join -->
           <template v-else>
             <div class="mb-3">
-              <label class="mb-1 block text-xs text-muted">Your name</label>
+              <label class="mb-1 block text-xs text-muted">{{ t('collab.yourName') }}</label>
               <input
                 v-model="nameDraft"
                 data-test-id="collab-name-input"
                 class="w-full rounded border border-border bg-input px-2 py-1 text-xs text-surface"
-                placeholder="Enter your name"
+                :placeholder="t('collab.enterYourName')"
                 @keydown.enter="onShare"
               />
             </div>
@@ -245,12 +253,12 @@ function onDisconnect() {
               @click="onShare"
             >
               <icon-lucide-share-2 class="size-3.5" />
-              Share this file
+              {{ t('collab.shareThisFile') }}
             </button>
 
             <div class="mb-2 flex items-center gap-2">
               <div class="h-px flex-1 bg-border" />
-              <span class="text-[11px] text-muted">or join a room</span>
+              <span class="text-[11px] text-muted">{{ t('collab.orJoinRoom') }}</span>
               <div class="h-px flex-1 bg-border" />
             </div>
 
@@ -259,7 +267,7 @@ function onDisconnect() {
                 v-model="joinInput"
                 data-test-id="collab-join-input"
                 class="min-w-0 flex-1 rounded border border-border bg-input px-2 py-1 text-xs text-surface"
-                placeholder="Paste room link or ID"
+                :placeholder="t('collab.pasteRoomLink')"
                 @keydown.enter="onJoin"
               />
               <button
@@ -268,7 +276,7 @@ function onDisconnect() {
                 :disabled="!joinInput.trim() || !nameDraft.trim()"
                 @click="onJoin"
               >
-                Join
+                {{ t('collab.join') }}
               </button>
             </div>
           </template>

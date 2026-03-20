@@ -6,6 +6,7 @@ import { useHead } from '@unhead/vue'
 import { SplitterGroup, SplitterPanel, SplitterResizeHandle } from 'reka-ui'
 
 import { useKeyboard } from '@/composables/use-keyboard'
+import { useUII18n } from '@/composables/use-ui-i18n'
 import { useMenu } from '@/composables/use-menu'
 import { useCollab, COLLAB_KEY } from '@/composables/use-collab'
 import { connectAutomation } from '@/automation/server'
@@ -28,6 +29,7 @@ import Toolbar from '@/components/Toolbar.vue'
 const route = useRoute()
 const params = useUrlSearchParams('history')
 const showChrome = !('no-chrome' in params)
+const { t } = useUII18n()
 
 const firstTab = createTab()
 const store = useEditorStore()
@@ -148,7 +150,7 @@ onUnmounted(() => {
           <button
             data-test-id="editor-show-ui"
             class="ml-1 flex size-6 cursor-pointer items-center justify-center rounded text-muted transition-colors hover:bg-hover hover:text-surface"
-            title="Show UI (⌘\)"
+            :title="`${t('app.showUI')} (⌘\\)`"
             @click="store.state.showUI = true"
           >
             <icon-lucide-sidebar class="size-3.5" />

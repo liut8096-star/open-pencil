@@ -4,6 +4,7 @@ import { useEventListener } from '@vueuse/core'
 import { TreeRoot, TreeItem, ContextMenuRoot, ContextMenuTrigger, ContextMenuPortal } from 'reka-ui'
 
 import { useInlineRename } from '@/composables/use-inline-rename'
+import { useUII18n } from '@/composables/use-ui-i18n'
 
 import IconCircle from '~icons/lucide/circle'
 import IconComponent from '~icons/lucide/diamond'
@@ -24,6 +25,7 @@ import { useEditorStore } from '@/stores/editor'
 import NodeContextMenuContent from './NodeContextMenuContent.vue'
 
 const store = useEditorStore()
+const { t } = useUII18n()
 const rename = useInlineRename((id, name) => store.renameNode(id, name))
 
 interface LayerNode {
@@ -67,12 +69,22 @@ const COMPONENT_TYPES = new Set(['COMPONENT', 'COMPONENT_SET', 'INSTANCE'])
 
 function toggleNodeVisibility(id: string) {
   const node = store.graph.getNode(id)
-  if (node) store.updateNodeWithUndo(id, { visible: !node.visible }, node.visible ? 'Hide layer' : 'Show layer')
+  if (node)
+    store.updateNodeWithUndo(
+      id,
+      { visible: !node.visible },
+      node.visible ? 'Hide layer' : 'Show layer'
+    )
 }
 
 function toggleNodeLock(id: string) {
   const node = store.graph.getNode(id)
-  if (node) store.updateNodeWithUndo(id, { locked: !node.locked }, node.locked ? 'Unlock layer' : 'Lock layer')
+  if (node)
+    store.updateNodeWithUndo(
+      id,
+      { locked: !node.locked },
+      node.locked ? 'Unlock layer' : 'Lock layer'
+    )
 }
 
 function buildTree(parentId: string): LayerNode[] {
@@ -435,7 +447,7 @@ function updateDropTarget(ev: PointerEvent) {
                 >
                   <span
                     class="flex size-4 items-center justify-center rounded hover:bg-white/15"
-                    :title="item.value.locked ? 'Unlock' : 'Lock'"
+                    :title="item.value.locked ? t('context.unlock') : t('menu.object.lock')"
                     @pointerdown.stop
                     @click.stop="toggleNodeLock(item.value.id)"
                   >
@@ -443,9 +455,7 @@ function updateDropTarget(ev: PointerEvent) {
                       v-if="item.value.locked"
                       class="size-3"
                       :class="
-                        store.state.selectedIds.has(item.value.id)
-                          ? 'text-white'
-                          : 'text-surface'
+                        store.state.selectedIds.has(item.value.id) ? 'text-white' : 'text-surface'
                       "
                     />
                     <icon-lucide-unlock
@@ -460,7 +470,7 @@ function updateDropTarget(ev: PointerEvent) {
                   </span>
                   <span
                     class="flex size-4 items-center justify-center rounded hover:bg-white/15"
-                    :title="item.value.visible ? 'Hide' : 'Show'"
+                    :title="item.value.visible ? t('context.hide') : t('context.show')"
                     @pointerdown.stop
                     @click.stop="toggleNodeVisibility(item.value.id)"
                   >
@@ -468,9 +478,7 @@ function updateDropTarget(ev: PointerEvent) {
                       v-if="!item.value.visible"
                       class="size-3"
                       :class="
-                        store.state.selectedIds.has(item.value.id)
-                          ? 'text-white'
-                          : 'text-surface'
+                        store.state.selectedIds.has(item.value.id) ? 'text-white' : 'text-surface'
                       "
                     />
                     <icon-lucide-eye

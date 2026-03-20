@@ -5,11 +5,13 @@ import { ScrollAreaRoot, ScrollAreaScrollbar, ScrollAreaThumb, ScrollAreaViewpor
 import { computed, ref, watch } from 'vue'
 
 import { selectionToJSX } from '@open-pencil/core'
+import { useUII18n } from '@/composables/use-ui-i18n'
 import { useEditorStore } from '@/stores/editor'
 
 import type { JSXFormat } from '@open-pencil/core'
 
 const store = useEditorStore()
+const { t } = useUII18n()
 const copied = ref(false)
 const jsxFormat = ref<JSXFormat>('openpencil')
 
@@ -50,7 +52,7 @@ watch(jsxCode, () => {
     data-test-id="code-panel-empty"
     class="flex flex-1 items-center justify-center px-4 text-center"
   >
-    <span class="text-xs text-muted">Select a layer to see its JSX code</span>
+    <span class="text-xs text-muted">{{ t('code.empty') }}</span>
   </div>
 
   <div v-else data-test-id="code-panel" class="flex min-h-0 flex-1 flex-col">
@@ -59,13 +61,13 @@ watch(jsxCode, () => {
       class="flex shrink-0 items-center justify-between border-b border-border px-3 py-1.5"
     >
       <div class="flex items-center gap-1.5">
-        <span class="text-[11px] text-muted">JSX</span>
+        <span class="text-[11px] text-muted">{{ t('code.label') }}</span>
         <button
           data-test-id="code-panel-format-toggle"
           class="rounded px-1.5 py-0.5 text-[11px] text-muted hover:bg-hover hover:text-surface"
           @click="toggleFormat"
         >
-          {{ jsxFormat === 'openpencil' ? 'OpenPencil' : 'Tailwind' }}
+          {{ jsxFormat === 'openpencil' ? t('code.formatOpenPencil') : t('code.formatTailwind') }}
         </button>
       </div>
       <button
@@ -75,7 +77,7 @@ watch(jsxCode, () => {
       >
         <icon-lucide-check v-if="copied" class="size-3 text-green-400" />
         <icon-lucide-copy v-else class="size-3" />
-        {{ copied ? 'Copied' : 'Copy' }}
+        {{ copied ? t('code.copied') : t('code.copy') }}
       </button>
     </div>
 

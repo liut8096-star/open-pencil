@@ -22,6 +22,7 @@ import IconZoomIn from '~icons/lucide/zoom-in'
 import { menuContent, menuItem } from '@/components/ui/menu'
 import { openFileDialog } from '@/composables/use-menu'
 import { useCollabInjected } from '@/composables/use-collab'
+import { useUII18n } from '@/composables/use-ui-i18n'
 import { toast } from '@/composables/use-toast'
 import { useEditorStore } from '@/stores/editor'
 import { colorToCSS } from '@open-pencil/core'
@@ -34,6 +35,7 @@ const route = useRoute()
 const router = useRouter()
 const collab = useCollabInjected()
 const store = useEditorStore()
+const { t } = useUII18n()
 
 const collabState = computed(() => collab.state.value)
 const collabPeers = computed(() => collab.remotePeers.value)
@@ -44,7 +46,7 @@ function onShare() {
   const roomId = collab.shareCurrentDoc()
   router.push(`/share/${roomId}`)
   navigator.clipboard.writeText(`${window.location.origin}/share/${roomId}`)
-  toast.show('Link copied to clipboard')
+  toast.show(t('mobile.linkCopied'))
 }
 
 function onJoin() {
@@ -66,21 +68,21 @@ interface MenuAction {
   action: () => void
 }
 
-const menuItems: MenuAction[] = [
+const menuItems = computed<MenuAction[]>(() => [
   {
     icon: IconFilePlus,
-    label: 'New',
+    label: t('menu.file.new'),
     action: () => import('@/stores/tabs').then((m) => m.createTab())
   },
-  { icon: IconFolderOpen, label: 'Open…', action: () => openFileDialog() },
-  { icon: IconSave, label: 'Save', action: () => store.saveFigFile() },
+  { icon: IconFolderOpen, label: t('menu.file.open'), action: () => openFileDialog() },
+  { icon: IconSave, label: t('menu.file.save'), action: () => store.saveFigFile() },
   {
     icon: IconImageDown,
-    label: 'Export…',
+    label: t('menu.file.exportSelection'),
     action: () => store.exportSelection(1, 'PNG')
   },
-  { icon: IconZoomIn, label: 'Zoom to fit', action: () => store.zoomToFit() }
-]
+  { icon: IconZoomIn, label: t('menu.view.zoomFit'), action: () => store.zoomToFit() }
+])
 
 const onlineCount = computed(() => collabPeers.value.length + 1)
 </script>
@@ -94,15 +96,15 @@ const onlineCount = computed(() => collabPeers.value.length + 1)
     <div class="pointer-events-auto flex flex-col items-start gap-1.5">
       <div class="flex gap-1.5">
         <button
-          class="flex size-8 cursor-pointer items-center justify-center rounded-full border border-white/10 bg-panel/70 shadow-md backdrop-blur-xl select-none active:bg-hover"
-          title="Undo"
+          class="flex size-8 cursor-pointer items-center justify-center rounded-full border border-border bg-panel/70 shadow-md backdrop-blur-xl select-none active:bg-hover"
+          :title="t('menu.edit.undo')"
           @click="store.undoAction()"
         >
           <icon-lucide-undo-2 class="size-3.5 text-surface" />
         </button>
         <button
-          class="flex size-8 cursor-pointer items-center justify-center rounded-full border border-white/10 bg-panel/70 shadow-md backdrop-blur-xl select-none active:bg-hover"
-          title="Redo"
+          class="flex size-8 cursor-pointer items-center justify-center rounded-full border border-border bg-panel/70 shadow-md backdrop-blur-xl select-none active:bg-hover"
+          :title="t('menu.edit.redo')"
           @click="store.redoAction()"
         >
           <icon-lucide-redo-2 class="size-3.5 text-surface" />
@@ -131,10 +133,12 @@ const onlineCount = computed(() => collabPeers.value.length + 1)
       <PopoverRoot v-if="collabState.connected">
         <PopoverTrigger as-child>
           <button
-            class="flex h-8 cursor-pointer items-center gap-1.5 rounded-full border border-white/10 bg-panel/70 px-3 shadow-md backdrop-blur-xl select-none active:bg-hover"
+            class="flex h-8 cursor-pointer items-center gap-1.5 rounded-full border border-border bg-panel/70 px-3 shadow-md backdrop-blur-xl select-none active:bg-hover"
           >
             <span class="size-2 rounded-full bg-green-500" />
-            <span class="text-xs text-surface">Online: {{ onlineCount }}</span>
+            <span class="text-xs text-surface">{{
+              t('mobile.online', { count: onlineCount })
+            }}</span>
           </button>
         </PopoverTrigger>
         <PopoverPortal>
@@ -145,19 +149,21 @@ const onlineCount = computed(() => collabPeers.value.length + 1)
             align="center"
             class="z-50 w-56 rounded-xl border border-border bg-panel p-3 shadow-xl"
           >
-            <div class="mb-2 text-[11px] tracking-wider text-muted uppercase">In this room</div>
+            <div class="mb-2 text-[11px] tracking-wider text-muted uppercase">
+              {{ t('mobile.inThisRoom') }}
+            </div>
             <div class="flex flex-col gap-2">
               <div class="flex items-center gap-2">
                 <div
                   class="flex size-7 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold text-white"
                   :style="{ background: colorToCSS(collabState.localColor) }"
                 >
-                  {{ initials(collabState.localName || 'You') }}
+                  {{ initials(collabState.localName || t('collab.you')) }}
                 </div>
                 <span class="min-w-0 flex-1 truncate text-xs text-surface">
-                  {{ collabState.localName || 'You' }}
+                  {{ collabState.localName || t('collab.you') }}
                 </span>
-                <span class="text-[10px] text-muted">you</span>
+                <span class="text-[10px] text-muted">{{ t('mobile.you') }}</span>
               </div>
 
               <div
@@ -174,9 +180,9 @@ const onlineCount = computed(() => collabPeers.value.length + 1)
                   {{ initials(peer.name) }}
                 </div>
                 <span class="min-w-0 flex-1 truncate text-xs text-surface">{{ peer.name }}</span>
-                <span v-if="followingPeer === peer.clientId" class="text-[10px] text-accent"
-                  >following</span
-                >
+                <span v-if="followingPeer === peer.clientId" class="text-[10px] text-accent">{{
+                  t('mobile.following')
+                }}</span>
               </div>
             </div>
 
@@ -184,7 +190,7 @@ const onlineCount = computed(() => collabPeers.value.length + 1)
               class="mt-3 flex h-7 w-full cursor-pointer items-center justify-center rounded border border-border bg-transparent text-xs text-muted select-none active:bg-hover"
               @click="onDisconnect"
             >
-              Disconnect
+              {{ t('mobile.disconnect') }}
             </button>
           </PopoverContent>
         </PopoverPortal>
@@ -208,17 +214,17 @@ const onlineCount = computed(() => collabPeers.value.length + 1)
     <!-- Share + Menu -->
     <div class="pointer-events-auto flex items-center gap-1.5">
       <button
-        class="flex h-8 cursor-pointer items-center gap-1.5 rounded-full border border-white/10 bg-panel/70 px-3 shadow-md backdrop-blur-xl select-none active:bg-hover"
+        class="flex h-8 cursor-pointer items-center gap-1.5 rounded-full border border-border bg-panel/70 px-3 shadow-md backdrop-blur-xl select-none active:bg-hover"
         @click="onShare"
       >
         <icon-lucide-share-2 class="size-3.5 text-surface" />
-        <span class="text-xs text-surface">Share</span>
+        <span class="text-xs text-surface">{{ t('mobile.share') }}</span>
       </button>
 
       <DropdownMenuRoot>
         <DropdownMenuTrigger as-child>
           <button
-            class="flex size-8 cursor-pointer items-center justify-center rounded-full border border-white/10 bg-panel/70 shadow-md backdrop-blur-xl select-none active:bg-hover"
+            class="flex size-8 cursor-pointer items-center justify-center rounded-full border border-border bg-panel/70 shadow-md backdrop-blur-xl select-none active:bg-hover"
           >
             <icon-lucide-menu class="size-3.5 text-surface" />
           </button>
