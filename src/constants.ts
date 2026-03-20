@@ -63,6 +63,29 @@ export const TRYSTERO_APP_ID = 'openpencil'
 export const ROOM_ID_LENGTH = 8
 export const ROOM_ID_CHARS = 'abcdefghijklmnopqrstuvwxyz0123456789'
 
+const DEFAULT_TRYSTERO_RELAY_URLS = [
+  'wss://broker.emqx.io:8084/mqtt',
+  'wss://broker.hivemq.com:8884/mqtt'
+]
+
+function normalizeRelayUrl(url: string): string {
+  if (url.startsWith('ws://') || url.startsWith('wss://')) return url
+  return `wss://${url}`
+}
+
+function readRelayUrls(): string[] {
+  const configured = import.meta.env.VITE_TRYSTERO_RELAY_URLS
+  if (!configured) return DEFAULT_TRYSTERO_RELAY_URLS
+  const urls = configured
+    .split(/[,\n]/)
+    .map((url: string) => url.trim())
+    .filter(Boolean)
+    .map(normalizeRelayUrl)
+  return urls.length > 0 ? urls : DEFAULT_TRYSTERO_RELAY_URLS
+}
+
+export const TRYSTERO_RELAY_URLS = readRelayUrls()
+
 export const PEER_COLORS: Color[] = [
   { r: 0.96, g: 0.26, b: 0.21, a: 1 },
   { r: 0.13, g: 0.59, b: 0.95, a: 1 },

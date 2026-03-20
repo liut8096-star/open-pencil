@@ -7,6 +7,7 @@ import * as Y from 'yjs'
 
 import {
   TRYSTERO_APP_ID,
+  TRYSTERO_RELAY_URLS,
   PEER_COLORS,
   ROOM_ID_LENGTH,
   ROOM_ID_CHARS,
@@ -180,6 +181,8 @@ export function useCollab(store: EditorStore) {
     room = joinTrysteroRoom(
       {
         appId: TRYSTERO_APP_ID,
+        relayUrls: TRYSTERO_RELAY_URLS,
+        relayRedundancy: TRYSTERO_RELAY_URLS.length,
         rtcConfig: {
           iceServers: [
             { urls: 'stun:stun.l.google.com:19302' },
