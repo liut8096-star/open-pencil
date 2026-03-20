@@ -18,6 +18,84 @@ import type { EditorStore } from '@/stores/editor'
 import type { Color, SceneNode } from '@open-pencil/core'
 import type { Room } from 'trystero'
 
+const YJS_JSON_PREFIX = '__openpencil_json__:'
+const YJS_UINT8ARRAY_KEY = '__openpencil_uint8array__'
+const UNSYNCED_NODE_FIELDS = new Set<keyof SceneNode>(['textPicture'])
+const LEGACY_YJS_JSON_FIELDS = new Set([
+  ...YJS_JSON_FIELDS,
+  'fillGeometry',
+  'strokeGeometry',
+  'dashPattern',
+  'arcData',
+  'gridTemplateColumns',
+  'gridTemplateRows',
+  'gridPosition',
+  'overrides'
+])
+
+function tryRestoreUint8Array(value: unknown): unknown {
+  if (!value || typeof value !== 'object' || Array.isArray(value) || value instanceof Uint8Array) {
+    return value
+  }
+  const entries = Object.entries(value)
+  if (
+    entries.length === 0 ||
+    !entries.every(([key, item]) => /^\d+$/.test(key) && typeof item === 'number')
+  ) {
+    return value
+  }
+  const bytes = new Uint8Array(entries.length)
+  for (const [key, item] of entries) {
+    bytes[Number(key)] = item
+  }
+  return bytes
+}
+
+function repairLegacyStructuredValue(key: string, value: unknown): unknown {
+  if ((key === 'fillGeometry' || key === 'strokeGeometry') && Array.isArray(value)) {
+    return value.map((item) => {
+      if (!item || typeof item !== 'object' || Array.isArray(item)) return item
+      const geometry = item as { commandsBlob?: unknown }
+      return { ...geometry, commandsBlob: tryRestoreUint8Array(geometry.commandsBlob) }
+    })
+  }
+  return value
+}
+
+function serializeYjsNodeValue(value: unknown): unknown {
+  if (typeof value !== 'object' || value === null) return value
+  return `${YJS_JSON_PREFIX}${JSON.stringify(value, (_key, item) =>
+    item instanceof Uint8Array
+      ? { [YJS_UINT8ARRAY_KEY]: Array.from(item) }
+      : item
+  )}`
+}
+
+function deserializeYjsNodeValue(key: string, value: unknown): unknown {
+  if (typeof value !== 'string') return value
+  const shouldParse = value.startsWith(YJS_JSON_PREFIX) || LEGACY_YJS_JSON_FIELDS.has(key)
+  if (!shouldParse) return value
+  const raw = value.startsWith(YJS_JSON_PREFIX) ? value.slice(YJS_JSON_PREFIX.length) : value
+  try {
+    const parsed = JSON.parse(raw, (_innerKey, item: unknown) => {
+      if (
+        item &&
+        typeof item === 'object' &&
+        !Array.isArray(item) &&
+        YJS_UINT8ARRAY_KEY in item
+      ) {
+        const encoded = item as Record<string, unknown>
+        const bytes = encoded[YJS_UINT8ARRAY_KEY]
+        return Array.isArray(bytes) ? new Uint8Array(bytes as number[]) : item
+      }
+      return item
+    })
+    return repairLegacyStructuredValue(key, parsed)
+  } catch {
+    return value
+  }
+}
+
 export interface RemotePeer {
   clientId: number
   name: string
@@ -302,11 +380,8 @@ export function useCollab(store: EditorStore) {
 
   function syncNodePropsToYMap(node: SceneNode, ynode: Y.Map<unknown>) {
     for (const [key, value] of Object.entries(node)) {
-      if (typeof value === 'object' && value !== null) {
-        ynode.set(key, JSON.stringify(value))
-      } else {
-        ynode.set(key, value)
-      }
+      if (UNSYNCED_NODE_FIELDS.has(key as keyof SceneNode)) continue
+      ynode.set(key, serializeYjsNodeValue(value))
     }
   }
 
@@ -373,15 +448,7 @@ export function useCollab(store: EditorStore) {
     const props: Record<string, unknown> = {}
 
     for (const [key, value] of ynode.entries()) {
-      if (YJS_JSON_FIELDS.has(key)) {
-        try {
-          props[key] = typeof value === 'string' ? JSON.parse(value) : value
-        } catch {
-          props[key] = value
-        }
-      } else {
-        props[key] = value
-      }
+      props[key] = deserializeYjsNodeValue(key, value)
     }
 
     if (existing) {

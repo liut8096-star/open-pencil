@@ -3,6 +3,23 @@ import type { Canvas, Path } from 'canvaskit-wasm'
 import type { SkiaRenderer } from './renderer'
 import { vectorNetworkToPath, geometryBlobToPath } from '../vector'
 
+function restoreGeometryBlob(value: unknown): Uint8Array | null {
+  if (value instanceof Uint8Array) return value
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null
+  const entries = Object.entries(value)
+  if (
+    entries.length === 0 ||
+    !entries.every(([key, item]) => /^\d+$/.test(key) && typeof item === 'number')
+  ) {
+    return null
+  }
+  const bytes = new Uint8Array(entries.length)
+  for (const [key, item] of entries) {
+    bytes[Number(key)] = item
+  }
+  return bytes
+}
+
 export function makeNodeShapePath(
   r: SkiaRenderer,
   node: SceneNode,
@@ -171,23 +188,25 @@ export function getVectorPaths(r: SkiaRenderer, node: SceneNode): Path[] | null 
 }
 
 export function getFillGeometry(r: SkiaRenderer, node: SceneNode): Path[] | null {
-  if (node.fillGeometry.length === 0) return null
+  if (!Array.isArray(node.fillGeometry) || node.fillGeometry.length === 0) return null
   const cached = r.fillGeometryCache.get(node.id)
   if (cached) return cached
-  const paths = node.fillGeometry.map((g) =>
-    geometryBlobToPath(r.ck, g.commandsBlob, g.windingRule)
-  )
+  const paths = node.fillGeometry.flatMap((g) => {
+    const blob = restoreGeometryBlob(g.commandsBlob)
+    return blob ? [geometryBlobToPath(r.ck, blob, g.windingRule)] : []
+  })
   r.fillGeometryCache.set(node.id, paths)
   return paths
 }
 
 export function getStrokeGeometry(r: SkiaRenderer, node: SceneNode): Path[] | null {
-  if (node.strokeGeometry.length === 0) return null
+  if (!Array.isArray(node.strokeGeometry) || node.strokeGeometry.length === 0) return null
   const cached = r.strokeGeometryCache.get(node.id)
   if (cached) return cached
-  const paths = node.strokeGeometry.map((g) =>
-    geometryBlobToPath(r.ck, g.commandsBlob, g.windingRule)
-  )
+  const paths = node.strokeGeometry.flatMap((g) => {
+    const blob = restoreGeometryBlob(g.commandsBlob)
+    return blob ? [geometryBlobToPath(r.ck, blob, g.windingRule)] : []
+  })
   r.strokeGeometryCache.set(node.id, paths)
   return paths
 }
