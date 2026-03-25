@@ -62,7 +62,7 @@ function scrollToBottom() {
 
 watch(messages, scrollToBottom, { deep: true })
 
-async function handleSubmit(text: string) {
+async function handleSubmit({ text, files }: { text: string; files: File[] }) {
   if (status.value === 'streaming' || status.value === 'submitted') return
   try {
     initError.value = null
@@ -73,7 +73,7 @@ async function handleSubmit(text: string) {
     initError.value = e instanceof Error ? e.message : String(e)
     return
   }
-  chat.value?.sendMessage({ text }).catch((e: unknown) => {
+  chat.value?.sendMessage(text ? { text, files } : { files }).catch((e: unknown) => {
     console.error('Chat error:', e)
   })
 }
@@ -156,7 +156,7 @@ function handleClearChat() {
             <div v-if="showContinue" class="flex justify-center py-2">
               <button
                 class="flex items-center gap-1.5 rounded-full bg-accent/10 px-4 py-1.5 text-xs font-medium text-accent transition-colors hover:bg-accent/20"
-                @click="handleSubmit(t('chat.continuePrompt'))"
+                @click="handleSubmit({ text: t('chat.continuePrompt'), files: [] })"
               >
                 <icon-lucide-play class="size-3" />
                 {{ t('chat.continue') }}

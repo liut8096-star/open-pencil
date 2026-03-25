@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useFileDialog, useObjectUrl } from '@vueuse/core'
 import {
   SelectContent,
   SelectItem,
@@ -13,7 +14,7 @@ import {
   TooltipRoot,
   TooltipTrigger
 } from 'reka-ui'
-import { computed, ref } from 'vue'
+import { computed, ref, shallowRef } from 'vue'
 
 import ProviderSettings from '@/components/chat/ProviderSettings.vue'
 import { uiButton } from '@/components/ui/button'
@@ -32,11 +33,19 @@ const { status } = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  submit: [text: string]
+  submit: [payload: { text: string; files: File[] }]
   stop: []
 }>()
 
 const input = ref('')
+const imageFile = shallowRef<File | null>(null)
+const imagePreviewUrl = useObjectUrl(imageFile)
+
+const { open: pickImage, onChange: onPickImage } = useFileDialog({
+  accept: 'image/png,image/jpeg,image/webp,image/gif,image/avif',
+  multiple: false,
+  reset: true
+})
 
 const isStreaming = computed(() => status === 'streaming' || status === 'submitted')
 const isACPProvider = computed(() => providerID.value.startsWith('acp:'))
@@ -52,13 +61,24 @@ const selectedModelName = computed(() => {
   if (isCustomProvider.value) return customModelID.value || 'No model'
   return providerDef.value.models.find((m) => m.id === modelID.value)?.name ?? modelID.value
 })
+const canSubmit = computed(() => Boolean(input.value.trim()) || imageFile.value !== null)
+
+onPickImage((files) => {
+  imageFile.value = files?.[0] ?? null
+})
+
+function clearImage() {
+  imageFile.value = null
+}
 
 function handleSubmit(e: Event) {
   e.preventDefault()
   const text = input.value.trim()
-  if (!text) return
-  emit('submit', text)
+  const files = imageFile.value ? [imageFile.value] : []
+  if (!text && files.length === 0) return
+  emit('submit', { text, files })
   input.value = ''
+  clearImage()
 }
 </script>
 
@@ -130,24 +150,23 @@ function handleSubmit(e: Event) {
         </div>
       </div>
 
-      <!-- Input form -->
-      <form class="flex gap-1.5" @submit="handleSubmit">
-        <input
-          v-model="input"
-          type="text"
-          data-test-id="chat-input"
-          :placeholder="t('chat.inputPlaceholder')"
-          :class="uiInput({ class: 'min-w-0 flex-1 placeholder:text-muted' })"
-          :disabled="isStreaming"
-          @paste.stop
-          @copy.stop
-          @cut.stop
-        />
-        <TooltipRoot v-if="isStreaming">
-          <TooltipTrigger as-child>
+      <div class="rounded-2xl border border-border bg-input/60 p-1.5">
+        <div v-if="imageFile && imagePreviewUrl" class="mb-1.5">
+          <div
+            class="flex items-center gap-2 rounded-xl border border-border bg-panel px-2 py-2"
+            data-test-id="chat-image-preview"
+          >
+            <img
+              :src="imagePreviewUrl"
+              :alt="imageFile.name"
+              class="size-12 shrink-0 rounded-lg border border-border object-cover"
+            />
+            <div class="min-w-0 flex-1">
+              <div class="truncate text-[11px] font-medium text-surface">{{ imageFile.name }}</div>
+              <div class="text-[10px] text-muted">{{ t('chat.imageReady') }}</div>
+            </div>
             <button
               type="button"
-              data-test-id="chat-stop-button"
               :class="
                 uiButton({
                   tone: 'ghost',
@@ -156,50 +175,121 @@ function handleSubmit(e: Event) {
                   class: 'shrink-0 border border-border px-2 py-1.5'
                 })
               "
-              @click="emit('stop')"
+              :disabled="isStreaming"
+              @click="clearImage"
             >
-              <icon-lucide-square class="size-3" />
+              <icon-lucide-x class="size-3" />
             </button>
-          </TooltipTrigger>
-          <TooltipPortal>
-            <TooltipContent
-              side="top"
-              :side-offset="4"
-              class="rounded bg-surface px-2 py-1 text-[10px] text-canvas"
-            >
-              {{ t('chat.stopGenerating') }}
-            </TooltipContent>
-          </TooltipPortal>
-        </TooltipRoot>
-        <TooltipRoot v-else>
-          <TooltipTrigger as-child>
-            <button
-              type="submit"
-              data-test-id="chat-send-button"
-              :class="
-                uiButton({
-                  tone: 'accent',
-                  shape: 'rounded',
-                  size: 'sm',
-                  class: 'shrink-0 px-2.5 py-1.5 font-medium'
-                })
-              "
-              :disabled="!input.trim()"
-            >
-              <icon-lucide-send class="size-3" />
-            </button>
-          </TooltipTrigger>
-          <TooltipPortal>
-            <TooltipContent
-              side="top"
-              :side-offset="4"
-              class="rounded bg-surface px-2 py-1 text-[10px] text-canvas"
-            >
-              {{ t('chat.sendMessage') }}
-            </TooltipContent>
-          </TooltipPortal>
-        </TooltipRoot>
-      </form>
+          </div>
+        </div>
+
+        <!-- Input form -->
+        <form class="flex items-center gap-1.5" @submit="handleSubmit">
+          <TooltipRoot>
+            <TooltipTrigger as-child>
+              <button
+                type="button"
+                data-test-id="chat-image-button"
+                :class="
+                  uiButton({
+                    tone: imageFile ? 'accent' : 'ghost',
+                    shape: 'rounded',
+                    size: 'sm',
+                    class: 'shrink-0 border border-border px-2 py-1.5'
+                  })
+                "
+                :disabled="isStreaming"
+                @click="pickImage"
+              >
+                <icon-lucide-plus class="size-3.5" />
+              </button>
+            </TooltipTrigger>
+            <TooltipPortal>
+              <TooltipContent
+                side="top"
+                :side-offset="4"
+                class="rounded bg-surface px-2 py-1 text-[10px] text-canvas"
+              >
+                {{ t('chat.addImage') }}
+              </TooltipContent>
+            </TooltipPortal>
+          </TooltipRoot>
+
+          <input
+            v-model="input"
+            type="text"
+            data-test-id="chat-input"
+            :placeholder="t('chat.inputPlaceholder')"
+            :class="
+              uiInput({
+                class:
+                  'min-w-0 flex-1 border-none bg-transparent placeholder:text-muted focus:border-none'
+              })
+            "
+            :disabled="isStreaming"
+            @paste.stop
+            @copy.stop
+            @cut.stop
+          />
+
+          <TooltipRoot v-if="isStreaming">
+            <TooltipTrigger as-child>
+              <button
+                type="button"
+                data-test-id="chat-stop-button"
+                :class="
+                  uiButton({
+                    tone: 'ghost',
+                    shape: 'rounded',
+                    size: 'sm',
+                    class: 'shrink-0 border border-border px-2 py-1.5'
+                  })
+                "
+                @click="emit('stop')"
+              >
+                <icon-lucide-square class="size-3" />
+              </button>
+            </TooltipTrigger>
+            <TooltipPortal>
+              <TooltipContent
+                side="top"
+                :side-offset="4"
+                class="rounded bg-surface px-2 py-1 text-[10px] text-canvas"
+              >
+                {{ t('chat.stopGenerating') }}
+              </TooltipContent>
+            </TooltipPortal>
+          </TooltipRoot>
+          <TooltipRoot v-else>
+            <TooltipTrigger as-child>
+              <button
+                type="submit"
+                data-test-id="chat-send-button"
+                :class="
+                  uiButton({
+                    tone: 'accent',
+                    shape: 'rounded',
+                    size: 'sm',
+                    class: 'shrink-0 px-2.5 py-1.5 font-medium'
+                  })
+                "
+                :disabled="!canSubmit"
+              >
+                <icon-lucide-send class="size-3" />
+              </button>
+            </TooltipTrigger>
+            <TooltipPortal>
+              <TooltipContent
+                side="top"
+                :side-offset="4"
+                class="rounded bg-surface px-2 py-1 text-[10px] text-canvas"
+              >
+                {{ t('chat.sendMessage') }}
+              </TooltipContent>
+            </TooltipPortal>
+          </TooltipRoot>
+        </form>
+      </div>
     </div>
   </TooltipProvider>
 </template>

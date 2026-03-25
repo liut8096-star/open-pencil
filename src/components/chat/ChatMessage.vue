@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { isTextUIPart, isToolUIPart, getToolName } from 'ai'
+import { getToolName, isFileUIPart, isTextUIPart, isToolUIPart } from 'ai'
 import { CollapsibleContent, CollapsibleRoot, CollapsibleTrigger } from 'reka-ui'
 import { Markdown } from 'vue-stream-markdown'
 import 'vue-stream-markdown/index.css'
@@ -38,6 +38,10 @@ function toolState(part: ToolPart): 'pending' | 'done' | 'error' {
 function partKey(part: UIMessagePart, index: number): string {
   if ('toolCallId' in part) return part.toolCallId
   return `part-${index}`
+}
+
+function isImagePart(part: UIMessagePart): boolean {
+  return isFileUIPart(part) && part.mediaType.startsWith('image/')
 }
 </script>
 
@@ -110,21 +114,37 @@ function partKey(part: UIMessagePart, index: number): string {
           >
             <Markdown :content="part.text" :mermaid="false" class="chat-markdown" />
           </div>
+          <img
+            v-else-if="isImagePart(part)"
+            :src="part.url"
+            :alt="part.filename ?? 'image'"
+            class="max-h-64 max-w-full rounded-2xl border border-border bg-panel object-contain"
+          />
         </template>
       </template>
 
       <!-- User message -->
-      <div
-        v-else-if="message.role === 'user'"
-        data-test-id="chat-text-bubble"
-        class="rounded-xl rounded-br-md bg-accent px-3 py-2 text-xs leading-relaxed whitespace-pre-wrap text-white"
-      >
-        {{
-          message.parts
-            .filter(isTextUIPart)
-            .map((p) => p.text)
-            .join('')
-        }}
+      <div v-else-if="message.role === 'user'" class="space-y-1.5">
+        <img
+          v-for="(part, i) in message.parts.filter(isImagePart)"
+          :key="partKey(part, i)"
+          :src="part.url"
+          :alt="part.filename ?? 'image'"
+          data-test-id="chat-user-image"
+          class="ml-auto max-h-64 max-w-full rounded-2xl rounded-br-md border border-accent/20 bg-accent/5 object-contain"
+        />
+        <div
+          v-if="message.parts.filter(isTextUIPart).some((p) => p.text)"
+          data-test-id="chat-text-bubble"
+          class="rounded-xl rounded-br-md bg-accent px-3 py-2 text-xs leading-relaxed whitespace-pre-wrap text-white"
+        >
+          {{
+            message.parts
+              .filter(isTextUIPart)
+              .map((p) => p.text)
+              .join('')
+          }}
+        </div>
       </div>
     </div>
   </div>

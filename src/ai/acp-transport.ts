@@ -24,8 +24,13 @@ interface ACPSession {
   sessionId: string
   child: TauriChild
   onUpdate: ((params: SessionNotification) => void) | null
+  supportsImagePrompt: boolean
   dead: boolean
 }
+
+type ACPPromptBlock =
+  | { type: 'text'; text: string }
+  | { type: 'image'; mimeType: string; data: string; uri?: string }
 
 export function formatConnectionError(e: unknown): string {
   const msg = e instanceof Error ? e.message : String(e)
@@ -109,11 +114,6 @@ export class ACPChatTransport implements ChatTransport<UIMessage> {
     ReadableStream<UIMessageChunk>
   > {
     const lastUserMessage = [...messages].reverse().find((m) => m.role === 'user')
-    const text =
-      lastUserMessage?.parts
-        .filter((p): p is { type: 'text'; text: string } => p.type === 'text')
-        .map((p) => p.text)
-        .join('\n') ?? ''
 
     if (this.session?.dead) {
       this.session = null
@@ -123,7 +123,10 @@ export class ACPChatTransport implements ChatTransport<UIMessage> {
       this.session = await this.spawnAgent()
     }
 
-    const promptText = this.sentContext ? text : `${SYSTEM_PROMPT}\n\n${text}`
+    const promptBlocks = this.buildPromptBlocks(lastUserMessage, this.session.supportsImagePrompt)
+    const prompt = this.sentContext
+      ? promptBlocks
+      : [{ type: 'text' as const, text: SYSTEM_PROMPT }, ...promptBlocks]
     this.sentContext = true
 
     const { connection, sessionId } = this.session
@@ -173,7 +176,7 @@ export class ACPChatTransport implements ChatTransport<UIMessage> {
         connection
           .prompt({
             sessionId,
-            prompt: [{ type: 'text', text: promptText }]
+            prompt
           })
           .then((result) => {
             finish(result.stopReason === 'end_turn' ? 'stop' : 'other')
@@ -274,7 +277,7 @@ export class ACPChatTransport implements ChatTransport<UIMessage> {
 
     const connection = new ClientSideConnection((_agent: Agent) => clientImpl, stream)
 
-    await connection.initialize({
+    const init = await connection.initialize({
       protocolVersion: PROTOCOL_VERSION,
       clientCapabilities: {}
     })
@@ -301,6 +304,7 @@ export class ACPChatTransport implements ChatTransport<UIMessage> {
       connection,
       sessionId: sessionResult.sessionId,
       child,
+      supportsImagePrompt: init.agentCapabilities?.promptCapabilities?.image ?? false,
       dead: false,
       get onUpdate() {
         return onUpdate
@@ -312,4 +316,50 @@ export class ACPChatTransport implements ChatTransport<UIMessage> {
 
     return session
   }
+
+  private buildPromptBlocks(
+    message: UIMessage | undefined,
+    supportsImagePrompt: boolean
+  ): ACPPromptBlock[] {
+    if (!message) return [{ type: 'text', text: '' }]
+
+    const blocks: ACPPromptBlock[] = []
+    const fallbackText: string[] = []
+
+    for (const part of message.parts) {
+      if (part.type === 'text' && part.text) {
+        blocks.push({ type: 'text', text: part.text })
+        continue
+      }
+
+      if (part.type !== 'file') continue
+      if (!part.mediaType.startsWith('image/')) continue
+
+      if (supportsImagePrompt) {
+        const base64 = dataUrlToBase64(part.url)
+        if (base64) {
+          blocks.push({
+            type: 'image',
+            mimeType: part.mediaType,
+            data: base64,
+            uri: part.url
+          })
+          continue
+        }
+      }
+
+      fallbackText.push(`[Attached image: ${part.filename ?? 'image'}]`)
+    }
+
+    if (fallbackText.length > 0) {
+      blocks.push({ type: 'text', text: fallbackText.join('\n') })
+    }
+
+    return blocks.length > 0 ? blocks : [{ type: 'text', text: '' }]
+  }
+}
+
+function dataUrlToBase64(url: string): string | null {
+  const match = /^data:.*?;base64,(.+)$/i.exec(url)
+  return match?.[1] ?? null
 }
