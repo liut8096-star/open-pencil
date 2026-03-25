@@ -1,23 +1,23 @@
-import { useLocalStorage } from '@vueuse/core'
-import { joinRoom as joinTrysteroRoom } from 'trystero/mqtt'
-import { ref, watch, onUnmounted, computed, type InjectionKey, inject } from 'vue'
-import { IndexeddbPersistence } from 'y-indexeddb'
+import {useLocalStorage} from '@vueuse/core'
+import {joinRoom as joinTrysteroRoom} from 'trystero/mqtt'
+import {computed, inject, type InjectionKey, onUnmounted, ref, watch} from 'vue'
+import {IndexeddbPersistence} from 'y-indexeddb'
 import * as awarenessProtocol from 'y-protocols/awareness'
 import * as Y from 'yjs'
 
 import {
+  PEER_COLORS,
+  ROOM_ID_CHARS,
+  ROOM_ID_LENGTH,
   TRYSTERO_APP_ID,
   TRYSTERO_RELAY_URLS,
-  PEER_COLORS,
-  ROOM_ID_LENGTH,
-  ROOM_ID_CHARS,
   YJS_JSON_FIELDS
 } from '@/constants'
-import { randomIndex } from '@open-pencil/core'
+import type {Color, SceneNode} from '@open-pencil/core'
+import {randomIndex} from '@open-pencil/core'
 
-import type { EditorStore } from '@/stores/editor'
-import type { Color, SceneNode } from '@open-pencil/core'
-import type { Room } from 'trystero'
+import type {EditorStore} from '@/stores/editor'
+import type {Room} from 'trystero'
 
 const YJS_JSON_PREFIX = '__openpencil_json__:'
 const YJS_UINT8ARRAY_KEY = '__openpencil_uint8array__'
@@ -66,9 +66,7 @@ function repairLegacyStructuredValue(key: string, value: unknown): unknown {
 function serializeYjsNodeValue(value: unknown): unknown {
   if (typeof value !== 'object' || value === null) return value
   return `${YJS_JSON_PREFIX}${JSON.stringify(value, (_key, item) =>
-    item instanceof Uint8Array
-      ? { [YJS_UINT8ARRAY_KEY]: Array.from(item) }
-      : item
+      item instanceof Uint8Array ? {[YJS_UINT8ARRAY_KEY]: Array.from(item)} : item
   )}`
 }
 
@@ -79,12 +77,7 @@ function deserializeYjsNodeValue(key: string, value: unknown): unknown {
   const raw = value.startsWith(YJS_JSON_PREFIX) ? value.slice(YJS_JSON_PREFIX.length) : value
   try {
     const parsed = JSON.parse(raw, (_innerKey, item: unknown) => {
-      if (
-        item &&
-        typeof item === 'object' &&
-        !Array.isArray(item) &&
-        YJS_UINT8ARRAY_KEY in item
-      ) {
+      if (item && typeof item === 'object' && !Array.isArray(item) && YJS_UINT8ARRAY_KEY in item) {
         const encoded = item as Record<string, unknown>
         const bytes = encoded[YJS_UINT8ARRAY_KEY]
         return Array.isArray(bytes) ? new Uint8Array(bytes as number[]) : item

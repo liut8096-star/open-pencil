@@ -224,6 +224,25 @@ bun run dev        # Dev server at localhost:1420
 bun run tauri dev  # Desktop app (requires Rust)
 ```
 
+### Local startup script
+
+Use the unified local startup script for full-chain or single-component startup:
+
+```sh
+bun run dev:local -- full          # web + docs
+bun run dev:local -- full-desktop  # desktop + docs
+bun run dev:local -- web           # web editor only
+bun run dev:local -- desktop       # Tauri desktop only
+bun run dev:local -- docs          # docs only
+bun run dev:local -- mcp           # MCP only
+```
+
+Notes:
+
+- `web` and `desktop` auto-start MCP on `7600/7601`, so don't combine them with `mcp`
+- `desktop` requires a local Rust/Tauri toolchain
+- You can also run multiple targets directly: `bash scripts/dev-local.sh web docs`
+
 ### Quality gates
 
 | Command | Description |

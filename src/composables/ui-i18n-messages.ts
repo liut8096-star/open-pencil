@@ -1,6 +1,6 @@
-import { EN_EXTRA_MESSAGES, ZH_EXTRA_MESSAGES } from '@/composables/ui-i18n-extra-messages'
+import {EN_EXTRA_MESSAGES, ZH_EXTRA_MESSAGES} from '@/composables/ui-i18n-extra-messages'
 
-import type { UILocale } from '@/composables/use-ui-preferences'
+import type {UILocale} from '@/composables/use-ui-preferences'
 
 export type TranslationParams = Record<string, string | number>
 export type TranslationValue = string | ((params?: TranslationParams) => string)
@@ -17,6 +17,46 @@ export const MESSAGES: Record<UILocale, Partial<Record<string, TranslationValue>
     'theme.system': 'System',
     'theme.light': 'Light',
     'theme.dark': 'Dark',
+    'auth.brandSubtitle': 'Design delivery workspace',
+    'auth.badge': 'Secure workspace access',
+    'auth.title': 'Sign in to review, refine, and hand off production-ready design work.',
+    'auth.subtitle':
+        'Use your organization identity provider to open the editor, keep project history scoped to your workspace, and unblock engineering handoff without sharing raw local files.',
+    'auth.highlight.projects':
+        'Stable project entry for design, review, and implementation handoff.',
+    'auth.highlight.handoff': 'One login flow for designers, frontend, Android, and iOS engineers.',
+    'auth.highlight.audit': 'Clear ownership, session checks, and room-level access control.',
+    'auth.previewLabel': 'Workspace snapshot',
+    'auth.previewTitle':
+        'Keep the canvas, versions, and sharing path under one authenticated surface.',
+    'auth.previewPill': 'Web sign-in',
+    'auth.metric.workspace': 'Workspace',
+    'auth.metric.workspaceHint': 'Teams mapped to one access policy',
+    'auth.metric.delivery': 'Handoff',
+    'auth.metric.deliveryHint': 'Faster review to implementation loop',
+    'auth.metric.coverage': 'Surfaces',
+    'auth.metric.coverageHint': 'Web, MCP, and delivery workflows',
+    'auth.signInLabel': 'Authentication',
+    'auth.cardTitle': 'Open your workspace',
+    'auth.cardSubtitle':
+        'This deployment uses centralized authentication before the design editor becomes available.',
+    'auth.modeDisabled': 'Auth disabled',
+    'auth.modeSSO': 'SSO',
+    'auth.ssoTitle': 'Organization SSO',
+    'auth.ssoHint':
+        'Redirect through your configured identity provider and return to the editor after verification.',
+    'auth.policyTitle': 'Policy aware access',
+    'auth.policyHint':
+        'Session checks happen before protected routes so the editor never boots in an anonymous state.',
+    'auth.errorTitle': 'Session check failed',
+    'auth.continueSSO': 'Continue with secure sign-in',
+    'auth.openEditor': 'Open editor without auth',
+    'auth.retry': 'Retry session check',
+    'auth.tryDemo': 'Try public demo',
+    'auth.nextHint':
+        'After login you will be sent back to the protected route you originally requested.',
+    'auth.disabledHint':
+        'Authentication is currently disabled for this deployment. Turn on VITE_AUTH_ENABLED after your backend is ready.',
     'menu.file': 'File',
     'menu.edit': 'Edit',
     'menu.view': 'View',
@@ -264,6 +304,39 @@ export const MESSAGES: Record<UILocale, Partial<Record<string, TranslationValue>
     'theme.system': '跟随系统',
     'theme.light': '浅色',
     'theme.dark': '深色',
+    'auth.brandSubtitle': '设计交付工作区',
+    'auth.badge': '安全工作区访问',
+    'auth.title': '登录后再进入设计、评审与交付一体化工作区。',
+    'auth.subtitle':
+        '使用组织身份提供方登录编辑器，把项目历史与访问范围收敛在工作区内，减少通过本地文件反复传递设计稿的成本。',
+    'auth.highlight.projects': '为设计、评审和研发交接提供稳定的项目入口。',
+    'auth.highlight.handoff': '设计、前端、Android、iOS 共用同一套登录入口。',
+    'auth.highlight.audit': '具备明确归属、会话校验与房间级访问控制。',
+    'auth.previewLabel': '工作区预览',
+    'auth.previewTitle': '把画布、版本和分享入口统一收拢到登录后的工作台里。',
+    'auth.previewPill': 'Web 登录',
+    'auth.metric.workspace': '工作区',
+    'auth.metric.workspaceHint': '团队统一映射到同一套访问策略',
+    'auth.metric.delivery': '交付效率',
+    'auth.metric.deliveryHint': '缩短评审到实现的闭环',
+    'auth.metric.coverage': '接入面',
+    'auth.metric.coverageHint': '覆盖 Web、MCP 与交付流程',
+    'auth.signInLabel': '身份验证',
+    'auth.cardTitle': '进入你的工作区',
+    'auth.cardSubtitle': '当前部署会先完成集中鉴权，再开放设计编辑器。',
+    'auth.modeDisabled': '未启用鉴权',
+    'auth.modeSSO': '单点登录',
+    'auth.ssoTitle': '组织 SSO 登录',
+    'auth.ssoHint': '通过你配置的身份提供方完成登录，验证后自动回到编辑器。',
+    'auth.policyTitle': '策略感知访问',
+    'auth.policyHint': '受保护路由会先完成会话校验，避免匿名状态直接进入编辑器。',
+    'auth.errorTitle': '会话校验失败',
+    'auth.continueSSO': '继续安全登录',
+    'auth.openEditor': '不鉴权直接进入',
+    'auth.retry': '重新检查会话',
+    'auth.tryDemo': '查看公开演示',
+    'auth.nextHint': '登录成功后会自动回到你最初请求的受保护页面。',
+    'auth.disabledHint': '当前部署尚未启用鉴权。后端准备好后开启 VITE_AUTH_ENABLED 即可生效。',
     'menu.file': '文件',
     'menu.edit': '编辑',
     'menu.view': '视图',

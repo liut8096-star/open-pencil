@@ -26,6 +26,7 @@
     "docs:dev": "bun --filter @open-pencil/docs dev",
     "docs:build": "bun --filter @open-pencil/docs build",
     "docs:preview": "bun --filter @open-pencil/docs preview",
+    "dev:local": "bash scripts/dev-local.sh",
     "visual-compare": "bun scripts/visual-compare.ts"
   },
   "dependencies": {

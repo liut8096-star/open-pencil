@@ -9,6 +9,8 @@
 - Nested container navigation — each double-click goes one level deeper
 - Dashed border around entered container for visual feedback
 - Layer panel click syncs canvas scope automatically
+- Add a web login page and auth route guard scaffold for centralized SSO-backed deployments
+- Add `scripts/dev-local.sh` unified local startup script for full-chain and per-component dev runs
 
 ### Fixes
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useFileDialog, useObjectUrl } from '@vueuse/core'
+import {useFileDialog, useObjectUrl} from '@vueuse/core'
 import {
   SelectContent,
   SelectItem,
@@ -14,16 +14,16 @@ import {
   TooltipRoot,
   TooltipTrigger
 } from 'reka-ui'
-import { computed, ref, shallowRef } from 'vue'
+import {computed, ref, shallowRef} from 'vue'
 
 import ProviderSettings from '@/components/chat/ProviderSettings.vue'
-import { uiButton } from '@/components/ui/button'
-import { uiInput } from '@/components/ui/input'
-import { selectContent, selectItem, selectTrigger } from '@/components/ui/select'
-import { useAIChat } from '@/composables/use-chat'
-import { useUII18n } from '@/composables/use-ui-i18n'
+import {uiButton} from '@/components/ui/button'
+import {uiInput} from '@/components/ui/input'
+import {selectContent, selectItem, selectTrigger} from '@/components/ui/select'
+import {useAIChat} from '@/composables/use-chat'
+import {useUII18n} from '@/composables/use-ui-i18n'
 
-import { ACP_AGENTS } from '@open-pencil/core'
+import {ACP_AGENTS} from '@open-pencil/core'
 
 const { providerID, providerDef, modelID, customModelID } = useAIChat()
 const { t } = useUII18n()
@@ -150,7 +150,9 @@ function handleSubmit(e: Event) {
         </div>
       </div>
 
-      <div class="rounded-2xl border border-border bg-input/60 p-1.5">
+      <div
+          class="rounded-[28px] border border-border/80 bg-panel px-2 py-1.5 shadow-[0_8px_24px_rgba(15,23,42,0.08)]"
+      >
         <div v-if="imageFile && imagePreviewUrl" class="mb-1.5">
           <div
             class="flex items-center gap-2 rounded-xl border border-border bg-panel px-2 py-2"
@@ -184,20 +186,13 @@ function handleSubmit(e: Event) {
         </div>
 
         <!-- Input form -->
-        <form class="flex items-center gap-1.5" @submit="handleSubmit">
+        <form class="flex items-center gap-1" @submit="handleSubmit">
           <TooltipRoot>
             <TooltipTrigger as-child>
               <button
                 type="button"
                 data-test-id="chat-image-button"
-                :class="
-                  uiButton({
-                    tone: imageFile ? 'accent' : 'ghost',
-                    shape: 'rounded',
-                    size: 'sm',
-                    class: 'shrink-0 border border-border px-2 py-1.5'
-                  })
-                "
+                class="flex size-8 shrink-0 items-center justify-center rounded-full border-none bg-transparent p-0 text-surface transition-colors hover:bg-hover/60"
                 :disabled="isStreaming"
                 @click="pickImage"
               >
@@ -223,7 +218,7 @@ function handleSubmit(e: Event) {
             :class="
               uiInput({
                 class:
-                  'min-w-0 flex-1 border-none bg-transparent placeholder:text-muted focus:border-none'
+                  'min-w-0 flex-1 border-none bg-transparent px-1 text-[13px] placeholder:text-muted focus:border-none'
               })
             "
             :disabled="isStreaming"
