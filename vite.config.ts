@@ -1,18 +1,20 @@
-import { resolve } from 'path'
+import {resolve} from 'path'
 
-import { defineConfig } from 'vite'
+import {defineConfig} from 'vite'
 import vue from '@vitejs/plugin-vue'
 import tailwindcss from '@tailwindcss/vite'
 import Icons from 'unplugin-icons/vite'
 import IconsResolver from 'unplugin-icons/resolver'
 import Components from 'unplugin-vue-components/vite'
-import { VitePWA } from 'vite-plugin-pwa'
-import { copyFileSync, existsSync, mkdirSync } from 'fs'
+import {VitePWA} from 'vite-plugin-pwa'
+import {copyFileSync, existsSync, mkdirSync} from 'fs'
 
-import { automationPlugin } from './src/automation/vite-plugin'
+import {automationPlugin} from './src/automation/vite-plugin'
 
 // @ts-expect-error process is a nodejs global
 const host = process.env.TAURI_DEV_HOST
+// @ts-expect-error process is a nodejs global
+const devBackendProxy = process.env.OPENPENCIL_DEV_BACKEND_PROXY || 'http://127.0.0.1:8080'
 
 export default defineConfig(async () => ({
   resolve: {
@@ -106,6 +108,12 @@ export default defineConfig(async () => ({
         '**/.github/**',
         '**/.pi/**'
       ]
+    },
+    proxy: {
+      '/api': devBackendProxy,
+      '/oauth2': devBackendProxy,
+      '/mcp': devBackendProxy,
+      '/healthz': devBackendProxy
     }
   }
 }))

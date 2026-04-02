@@ -229,8 +229,9 @@ bun run tauri dev  # Desktop app (requires Rust)
 Use the unified local startup script for full-chain or single-component startup:
 
 ```sh
-bun run dev:local -- full          # web + docs
-bun run dev:local -- full-desktop  # desktop + docs
+bun run dev:local -- full          # backend + web + docs
+bun run dev:local -- full-desktop  # backend + desktop + docs
+bun run dev:local -- backend       # Go backend only
 bun run dev:local -- web           # web editor only
 bun run dev:local -- desktop       # Tauri desktop only
 bun run dev:local -- docs          # docs only
@@ -240,8 +241,9 @@ bun run dev:local -- mcp           # MCP only
 Notes:
 
 - `web` and `desktop` auto-start MCP on `7600/7601`, so don't combine them with `mcp`
+- `backend` listens on `:8080` by default, with `MCP_UPSTREAM=http://127.0.0.1:7600`
 - `desktop` requires a local Rust/Tauri toolchain
-- You can also run multiple targets directly: `bash scripts/dev-local.sh web docs`
+- You can also run multiple targets directly: `bash scripts/dev-local.sh backend web docs`
 
 ### Quality gates
 

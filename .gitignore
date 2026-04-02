@@ -38,6 +38,7 @@ packages/collab/.wrangler/
 packages/core/vendor/canvaskit-webgpu/
 patches/skia-webgpu/
 .wrangler/
+backend/data/
 
 Caddyfile.dev
 components.d.ts

@@ -1,20 +1,21 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, provide, ref } from 'vue'
-import { useBreakpoints, useEventListener, useUrlSearchParams } from '@vueuse/core'
-import { useRoute } from 'vue-router'
-import { useHead } from '@unhead/vue'
-import { SplitterGroup, SplitterPanel, SplitterResizeHandle } from 'reka-ui'
+import {onMounted, onUnmounted, provide, ref} from 'vue'
+import {useBreakpoints, useEventListener, useUrlSearchParams} from '@vueuse/core'
+import {useRoute} from 'vue-router'
+import {useHead} from '@unhead/vue'
+import {SplitterGroup, SplitterPanel, SplitterResizeHandle} from 'reka-ui'
 
-import { useKeyboard } from '@/composables/use-keyboard'
-import { useUII18n } from '@/composables/use-ui-i18n'
-import { useMenu } from '@/composables/use-menu'
-import { useCollab, COLLAB_KEY } from '@/composables/use-collab'
-import { connectAutomation } from '@/automation/server'
-import { spawnMCPIfNeeded } from '@/automation/spawn-mcp'
-import { IS_TAURI } from '@/constants'
-import { createDemoShapes } from '@/demo'
-import { useEditorStore } from '@/stores/editor'
-import { createTab, activeTab, getActiveStore } from '@/stores/tabs'
+import {useKeyboard} from '@/composables/use-keyboard'
+import {useUII18n} from '@/composables/use-ui-i18n'
+import {useMenu} from '@/composables/use-menu'
+import {useRemoteDocument} from '@/composables/use-remote-document'
+import {COLLAB_KEY, useCollab} from '@/composables/use-collab'
+import {connectAutomation} from '@/automation/server'
+import {spawnMCPIfNeeded} from '@/automation/spawn-mcp'
+import {IS_TAURI} from '@/constants'
+import {createDemoShapes} from '@/demo'
+import {useEditorStore} from '@/stores/editor'
+import {activeTab, createTab, getActiveStore} from '@/stores/tabs'
 
 import CollabPanel from '@/components/CollabPanel.vue'
 import EditorCanvas from '@/components/EditorCanvas.vue'
@@ -39,6 +40,8 @@ const isMobile = breakpoints.smaller('mobile')
 if (route.meta.demo && !('test' in params)) {
   createDemoShapes(firstTab.store)
 }
+
+useRemoteDocument(firstTab.store)
 
 useHead({ title: route.meta.demo ? 'Demo' : undefined })
 useKeyboard()

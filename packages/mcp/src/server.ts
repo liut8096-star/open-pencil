@@ -1,28 +1,15 @@
-import { randomUUID } from 'node:crypto'
-import { createRequire } from 'node:module'
+import {randomUUID} from 'node:crypto'
 
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js'
-import { Hono } from 'hono'
-import { cors } from 'hono/cors'
-import { WebSocketServer, type WebSocket } from 'ws'
-import { z } from 'zod'
+import {McpServer} from '@modelcontextprotocol/sdk/server/mcp.js'
+import {WebStandardStreamableHTTPServerTransport} from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js'
+import {Hono} from 'hono'
+import {cors} from 'hono/cors'
+import {type WebSocket, WebSocketServer} from 'ws'
+import {z} from 'zod'
 
-import {
-  ALL_TOOLS,
-  CODEGEN_PROMPT,
-  buildComponent,
-  createElement,
-  resolveToTree
-} from '@open-pencil/core'
+import {ALL_TOOLS, buildComponent, CODEGEN_PROMPT, createElement, resolveToTree} from '@open-pencil/core'
 
-import type { ParamDef, ParamType } from '@open-pencil/core'
-
-const require = createRequire(import.meta.url)
-const MCP_VERSION: string = (require('../package.json') as { version: string }).version
-
-type MCPContent = { type: 'text'; text: string } | { type: 'image'; data: string; mimeType: string }
-type MCPResult = { content: MCPContent[]; isError?: boolean }
+import {fail, MCP_VERSION, ok, paramToZod} from './shared.js'
 
 const RPC_TIMEOUT = 30_000
 
@@ -30,36 +17,6 @@ interface PendingRequest {
   resolve: (value: unknown) => void
   reject: (error: Error) => void
   timer: ReturnType<typeof setTimeout>
-}
-
-function ok(data: unknown): MCPResult {
-  return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }] }
-}
-
-function fail(e: unknown): MCPResult {
-  const msg = e instanceof Error ? e.message : String(e)
-  return { content: [{ type: 'text', text: JSON.stringify({ error: msg }) }], isError: true }
-}
-
-export function paramToZod(param: ParamDef): z.ZodType {
-  const typeMap: Record<ParamType, () => z.ZodType> = {
-    string: () =>
-      param.enum
-        ? z.enum(param.enum as [string, ...string[]]).describe(param.description)
-        : z.string().describe(param.description),
-    number: () => {
-      let s = z.number()
-      if (param.min !== undefined) s = s.min(param.min)
-      if (param.max !== undefined) s = s.max(param.max)
-      return s.describe(param.description)
-    },
-    boolean: () => z.boolean().describe(param.description),
-    color: () => z.string().describe(param.description),
-    'string[]': () => z.array(z.string()).min(1).describe(param.description)
-  }
-
-  const schema = typeMap[param.type]()
-  return param.required ? schema : schema.optional()
 }
 
 export interface ServerOptions {

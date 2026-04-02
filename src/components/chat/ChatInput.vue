@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import {useFileDialog, useObjectUrl} from '@vueuse/core'
+import {useFileDialog} from '@vueuse/core'
 import {
+  onBeforeUnmount,
   SelectContent,
   SelectItem,
   SelectItemText,
@@ -14,16 +15,17 @@ import {
   TooltipRoot,
   TooltipTrigger
 } from 'reka-ui'
-import {computed, ref, shallowRef} from 'vue'
+import {computed, ref, shallowRef, watch} from 'vue'
 
 import ProviderSettings from '@/components/chat/ProviderSettings.vue'
-import {uiButton} from '@/components/ui/button'
 import {uiInput} from '@/components/ui/input'
 import {selectContent, selectItem, selectTrigger} from '@/components/ui/select'
 import {useAIChat} from '@/composables/use-chat'
 import {useUII18n} from '@/composables/use-ui-i18n'
 
 import {ACP_AGENTS} from '@open-pencil/core'
+
+import type {FileUIPart} from 'ai'
 
 const { providerID, providerDef, modelID, customModelID } = useAIChat()
 const { t } = useUII18n()
@@ -33,17 +35,17 @@ const { status } = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  submit: [payload: { text: string; files: File[] }]
+  submit: [payload: { text: string; files: FileUIPart[] }]
   stop: []
 }>()
 
 const input = ref('')
-const imageFile = shallowRef<File | null>(null)
-const imagePreviewUrl = useObjectUrl(imageFile)
+const imageFiles = shallowRef<File[]>([])
+const imagePreviewUrls = ref<string[]>([])
 
 const { open: pickImage, onChange: onPickImage } = useFileDialog({
   accept: 'image/png,image/jpeg,image/webp,image/gif,image/avif',
-  multiple: false,
+  multiple: true,
   reset: true
 })
 
@@ -61,24 +63,74 @@ const selectedModelName = computed(() => {
   if (isCustomProvider.value) return customModelID.value || 'No model'
   return providerDef.value.models.find((m) => m.id === modelID.value)?.name ?? modelID.value
 })
-const canSubmit = computed(() => Boolean(input.value.trim()) || imageFile.value !== null)
+const canSubmit = computed(() => Boolean(input.value.trim()) || imageFiles.value.length > 0)
 
 onPickImage((files) => {
-  imageFile.value = files?.[0] ?? null
+  if (!files?.length) return
+  const next = Array.from(files)
+  imageFiles.value = dedupeFiles([...imageFiles.value, ...next])
 })
 
-function clearImage() {
-  imageFile.value = null
+watch(
+    imageFiles,
+    (files) => {
+      for (const url of imagePreviewUrls.value) URL.revokeObjectURL(url)
+      imagePreviewUrls.value = files.map((file) => URL.createObjectURL(file))
+    },
+    {immediate: true}
+)
+
+onBeforeUnmount(() => {
+  for (const url of imagePreviewUrls.value) URL.revokeObjectURL(url)
+})
+
+function removeImage(index: number) {
+  imageFiles.value = imageFiles.value.filter((_, i) => i !== index)
 }
 
-function handleSubmit(e: Event) {
+function clearImages() {
+  imageFiles.value = []
+}
+
+async function handleSubmit(e: Event) {
   e.preventDefault()
   const text = input.value.trim()
-  const files = imageFile.value ? [imageFile.value] : []
+  const files =
+      imageFiles.value.length > 0
+          ? await Promise.all(imageFiles.value.map((file) => fileToUIPart(file)))
+          : []
   if (!text && files.length === 0) return
   emit('submit', { text, files })
   input.value = ''
-  clearImage()
+  clearImages()
+}
+
+function fileToUIPart(file: File): Promise<FileUIPart> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      resolve({
+        type: 'file',
+        mediaType: file.type || 'application/octet-stream',
+        filename: file.name,
+        url: String(reader.result ?? '')
+      })
+    }
+    reader.onerror = () => {
+      reject(reader.error ?? new Error('Failed to read image file'))
+    }
+    reader.readAsDataURL(file)
+  })
+}
+
+function dedupeFiles(files: File[]): File[] {
+  const seen = new Set<string>()
+  return files.filter((file) => {
+    const key = `${file.name}:${file.size}:${file.lastModified}`
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
 }
 </script>
 
@@ -153,35 +205,30 @@ function handleSubmit(e: Event) {
       <div
           class="rounded-[28px] border border-border/80 bg-panel px-2 py-1.5 shadow-[0_8px_24px_rgba(15,23,42,0.08)]"
       >
-        <div v-if="imageFile && imagePreviewUrl" class="mb-1.5">
-          <div
-            class="flex items-center gap-2 rounded-xl border border-border bg-panel px-2 py-2"
-            data-test-id="chat-image-preview"
-          >
-            <img
-              :src="imagePreviewUrl"
-              :alt="imageFile.name"
-              class="size-12 shrink-0 rounded-lg border border-border object-cover"
-            />
-            <div class="min-w-0 flex-1">
-              <div class="truncate text-[11px] font-medium text-surface">{{ imageFile.name }}</div>
-              <div class="text-[10px] text-muted">{{ t('chat.imageReady') }}</div>
-            </div>
-            <button
-              type="button"
-              :class="
-                uiButton({
-                  tone: 'ghost',
-                  shape: 'rounded',
-                  size: 'sm',
-                  class: 'shrink-0 border border-border px-2 py-1.5'
-                })
-              "
-              :disabled="isStreaming"
-              @click="clearImage"
+        <div v-if="imageFiles.length > 0" class="mb-2 space-y-1.5">
+          <div class="px-1 text-[10px] text-muted">
+            {{ t('chat.imagesReady', {count: imageFiles.length}) }}
+          </div>
+          <div class="flex flex-wrap gap-2" data-test-id="chat-image-preview">
+            <div
+                v-for="(file, index) in imageFiles"
+                :key="`${file.name}-${file.lastModified}-${file.size}`"
+                class="group relative"
             >
-              <icon-lucide-x class="size-3" />
-            </button>
+              <img
+                  :alt="file.name"
+                  :src="imagePreviewUrls[index]"
+                  class="size-14 rounded-xl border border-border bg-panel object-cover"
+              />
+              <button
+                  :disabled="isStreaming"
+                  class="absolute -top-1 -right-1 flex size-5 items-center justify-center rounded-full bg-surface text-canvas shadow-sm transition-opacity group-hover:opacity-100 md:opacity-0"
+                  type="button"
+                  @click="removeImage(index)"
+              >
+                <icon-lucide-x class="size-3"/>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -232,14 +279,7 @@ function handleSubmit(e: Event) {
               <button
                 type="button"
                 data-test-id="chat-stop-button"
-                :class="
-                  uiButton({
-                    tone: 'ghost',
-                    shape: 'rounded',
-                    size: 'sm',
-                    class: 'shrink-0 border border-border px-2 py-1.5'
-                  })
-                "
+                class="flex size-8 shrink-0 items-center justify-center rounded-full border-none bg-transparent p-0 text-muted transition-colors hover:bg-hover/60 hover:text-surface"
                 @click="emit('stop')"
               >
                 <icon-lucide-square class="size-3" />
@@ -261,13 +301,11 @@ function handleSubmit(e: Event) {
                 type="submit"
                 data-test-id="chat-send-button"
                 :class="
-                  uiButton({
-                    tone: 'accent',
-                    shape: 'rounded',
-                    size: 'sm',
-                    class: 'shrink-0 px-2.5 py-1.5 font-medium'
-                  })
+                  canSubmit
+                    ? 'bg-surface text-panel shadow-[0_6px_16px_rgba(15,23,42,0.16)] hover:scale-[1.03]'
+                    : 'bg-transparent text-muted'
                 "
+                class="flex size-8 shrink-0 items-center justify-center rounded-full border-none p-0 transition-all"
                 :disabled="!canSubmit"
               >
                 <icon-lucide-send class="size-3" />

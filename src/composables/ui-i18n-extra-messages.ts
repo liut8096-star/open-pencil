@@ -5,6 +5,8 @@ export const EN_EXTRA_MESSAGES = {
   'chat.inputPlaceholder': 'Describe a change…',
   'chat.addImage': 'Add image',
   'chat.imageReady': 'Image ready to send',
+    'chat.imagesReady': (params?: Record<string, string | number>) =>
+        `${params?.count ?? 0} image${Number(params?.count ?? 0) === 1 ? '' : 's'} selected`,
   'chat.stopGenerating': 'Stop generating',
   'chat.sendMessage': 'Send message',
   'context.pasteHere': 'Paste here',
@@ -71,6 +73,8 @@ export const ZH_EXTRA_MESSAGES = {
   'chat.inputPlaceholder': '描述一个改动…',
   'chat.addImage': '添加图片',
   'chat.imageReady': '图片已就绪，可发送',
+    'chat.imagesReady': (params?: Record<string, string | number>) =>
+        `已选择 ${params?.count ?? 0} 张图片`,
   'chat.stopGenerating': '停止生成',
   'chat.sendMessage': '发送消息',
   'context.pasteHere': '粘贴到这里',

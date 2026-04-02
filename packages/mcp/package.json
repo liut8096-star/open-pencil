@@ -5,7 +5,8 @@
   "type": "module",
   "main": "./src/server.ts",
   "bin": {
-    "openpencil-mcp": "./dist/index.js"
+    "openpencil-mcp": "./dist/index.js",
+    "openpencil-mcp-remote": "./dist/remote.js"
   },
   "files": [
     "src",

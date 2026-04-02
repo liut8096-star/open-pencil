@@ -1,19 +1,19 @@
 <script setup lang="ts">
-import { ScrollAreaRoot, ScrollAreaScrollbar, ScrollAreaThumb, ScrollAreaViewport } from 'reka-ui'
-import { computed, markRaw, nextTick, ref, watch } from 'vue'
+import {ScrollAreaRoot, ScrollAreaScrollbar, ScrollAreaThumb, ScrollAreaViewport} from 'reka-ui'
+import {computed, markRaw, nextTick, ref, watch} from 'vue'
 
-import { getAcpDebugText, clearAcpDebugLog, hasAcpDebugEntries } from '@/ai/acp-transport'
-import { copyChatLog } from '@/ai/chat-debug'
-import { clearToolLogEntries, didHitStepLimit } from '@/ai/tools'
+import {clearAcpDebugLog, getAcpDebugText, hasAcpDebugEntries} from '@/ai/acp-transport'
+import {copyChatLog} from '@/ai/chat-debug'
+import {clearToolLogEntries, didHitStepLimit} from '@/ai/tools'
 import ACPPermissionDialog from '@/components/chat/ACPPermissionDialog.vue'
 import ChatInput from '@/components/chat/ChatInput.vue'
 import ChatMessage from '@/components/chat/ChatMessage.vue'
 import ProviderSetup from '@/components/chat/ProviderSetup.vue'
-import { useAIChat } from '@/composables/use-chat'
-import { useUII18n } from '@/composables/use-ui-i18n'
+import {useAIChat} from '@/composables/use-chat'
+import {useUII18n} from '@/composables/use-ui-i18n'
 
-import type { Chat } from '@ai-sdk/vue'
-import type { UIMessage } from 'ai'
+import type {Chat} from '@ai-sdk/vue'
+import type {FileUIPart, UIMessage} from 'ai'
 
 const IS_DEV = import.meta.env.DEV
 
@@ -62,7 +62,7 @@ function scrollToBottom() {
 
 watch(messages, scrollToBottom, { deep: true })
 
-async function handleSubmit({ text, files }: { text: string; files: File[] }) {
+async function handleSubmit({text, files}: { text: string; files: FileUIPart[] }) {
   if (status.value === 'streaming' || status.value === 'submitted') return
   try {
     initError.value = null
@@ -75,6 +75,7 @@ async function handleSubmit({ text, files }: { text: string; files: File[] }) {
   }
   chat.value?.sendMessage(text ? { text, files } : { files }).catch((e: unknown) => {
     console.error('Chat error:', e)
+    initError.value = e instanceof Error ? e.message : String(e)
   })
 }
 

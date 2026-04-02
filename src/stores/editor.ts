@@ -1,38 +1,18 @@
-import { shallowReactive, shallowRef, computed, watch } from 'vue'
+import {computed, shallowReactive, shallowRef, watch} from 'vue'
 
-import { toast } from '@/composables/use-toast'
+import {toast} from '@/composables/use-toast'
 import {
-  IS_TAURI,
-  DEFAULT_SHAPE_FILL,
+  CANVAS_BG_COLOR,
   DEFAULT_FRAME_FILL,
+  DEFAULT_SHAPE_FILL,
+  IS_TAURI,
   SECTION_DEFAULT_FILL,
   SECTION_DEFAULT_STROKE,
-  CANVAS_BG_COLOR,
   ZOOM_DIVISOR,
-  ZOOM_SCALE_MIN,
-  ZOOM_SCALE_MAX
+  ZOOM_SCALE_MAX,
+  ZOOM_SCALE_MIN
 } from '@/constants'
-import { loadFont } from '@/engine/fonts'
-import {
-  collectFontKeys,
-  computeLayout,
-  computeAllLayouts,
-  computeVectorBounds,
-  exportFigFile,
-  importClipboardNodes,
-  parseFigmaClipboard,
-  buildFigmaClipboardHTML,
-  prefetchFigmaSchema,
-  readFigFile,
-  computeImageHash,
-  renderNodesToImage,
-  renderNodesToSVG,
-  SceneGraph,
-  setTextMeasurer,
-  TextEditor,
-  UndoManager
-} from '@open-pencil/core'
-
+import {loadFont} from '@/engine/fonts'
 import type {
   Color,
   ExportFormat,
@@ -44,13 +24,32 @@ import type {
   SkiaRenderer,
   SnapGuide,
   UndoEntry,
+  Vector,
   VectorNetwork,
   VectorRegion,
   VectorSegment,
-  Vector,
   VectorVertex
 } from '@open-pencil/core'
-import type { CanvasKit } from 'canvaskit-wasm'
+import {
+  buildFigmaClipboardHTML,
+  collectFontKeys,
+  computeAllLayouts,
+  computeImageHash,
+  computeLayout,
+  computeVectorBounds,
+  exportFigFile,
+  importClipboardNodes,
+  parseFigmaClipboard,
+  prefetchFigmaSchema,
+  readFigFile,
+  renderNodesToImage,
+  renderNodesToSVG,
+  SceneGraph,
+  setTextMeasurer,
+  TextEditor,
+  UndoManager
+} from '@open-pencil/core'
+import type {CanvasKit} from 'canvaskit-wasm'
 
 export type Tool =
   | 'SELECT'
@@ -701,32 +700,53 @@ export function createEditorStore() {
     return new Promise((r) => requestAnimationFrame(() => r()))
   }
 
-  async function openFigFile(file: File, handle?: FileSystemFileHandle, path?: string) {
-    try {
-      state.loading = true
-      await yieldToUI()
-      const imported = await readFigFile(file)
-      await yieldToUI()
-      graph = imported
-      computeAllLayouts(graph)
-      subscribeToGraph()
-      undo.clear()
-      pageViewports.clear()
-      fileHandle = handle ?? null
-      filePath = path ?? null
-      state.documentName = file.name.replace(/\.fig$/i, '')
-      downloadName = file.name
-      state.selectedIds = new Set()
-      const firstPage = graph.getPages()[0] as SceneNode | undefined
-      const pageId = firstPage?.id ?? graph.rootId
-      state.currentPageId = pageId
-      state.panX = 0
-      state.panY = 0
-      state.zoom = 1
-      state.pageColor = { ...CANVAS_BG_COLOR }
-      await loadFontsForNodes(graph.getChildren(pageId).map((n) => n.id))
-      requestRender()
+    async function applyImportedGraph(
+        imported: SceneGraph,
+        filename: string,
+        options: {
+            handle?: FileSystemFileHandle
+            path?: string
+            bindToFile?: boolean
+        } = {}
+    ) {
+        graph = imported
+        computeAllLayouts(graph)
+        subscribeToGraph()
+        undo.clear()
+        pageViewports.clear()
+        fileHandle = options.bindToFile ? (options.handle ?? null) : null
+        filePath = options.bindToFile ? (options.path ?? null) : null
+        downloadName = filename
+        state.documentName = filename.replace(/\.fig$/i, '')
+        state.selectedIds = new Set()
+        const firstPage = graph.getPages()[0] as SceneNode | undefined
+        const pageId = firstPage?.id ?? graph.rootId
+        state.currentPageId = pageId
+        state.panX = 0
+        state.panY = 0
+        state.zoom = 1
+        state.pageColor = {...CANVAS_BG_COLOR}
+        await loadFontsForNodes(graph.getChildren(pageId).map((n) => n.id))
+        requestRender()
+        savedVersion = state.sceneVersion
+        if (options.bindToFile) {
       void startWatchingFile()
+        } else {
+            stopWatchingFile()
+        }
+    }
+
+    async function openFigFile(file: File, handle?: FileSystemFileHandle, path?: string) {
+        try {
+            state.loading = true
+            await yieldToUI()
+            const imported = await readFigFile(file)
+            await yieldToUI()
+            await applyImportedGraph(imported, file.name, {
+                handle,
+                path,
+                bindToFile: true
+            })
     } catch (e) {
       console.error('Failed to open .fig file:', e)
       toast.show(`Failed to open file: ${e instanceof Error ? e.message : String(e)}`, 'error')
@@ -734,6 +754,38 @@ export function createEditorStore() {
       state.loading = false
     }
   }
+
+    async function openFigData(
+        data: Uint8Array | ArrayBuffer,
+        filename: string,
+        options: {
+            handle?: FileSystemFileHandle
+            path?: string
+            bindToFile?: boolean
+        } = {}
+    ) {
+        try {
+            state.loading = true
+            await yieldToUI()
+            const bytes = data instanceof Uint8Array ? data : new Uint8Array(data)
+            const file = new File([bytes as BlobPart], filename, {type: 'application/octet-stream'})
+            const imported = await readFigFile(file)
+            await yieldToUI()
+            await applyImportedGraph(imported, filename, options)
+        } catch (e) {
+            console.error('Failed to open remote .fig file:', e)
+            toast.show(
+                `Failed to open remote file: ${e instanceof Error ? e.message : String(e)}`,
+                'error'
+            )
+        } finally {
+            state.loading = false
+        }
+    }
+
+    async function openFigBytes(data: Uint8Array | ArrayBuffer, filename = 'Untitled.fig') {
+        await openFigData(data, filename)
+    }
 
   function setCanvasKit(ck: CanvasKit, renderer: SkiaRenderer) {
     _ck = ck
@@ -745,6 +797,10 @@ export function createEditorStore() {
   function buildFigFile() {
     return exportFigFile(graph, _ck ?? undefined, _renderer ?? undefined, state.currentPageId)
   }
+
+    async function exportFigBytes() {
+        return new Uint8Array(await buildFigFile())
+    }
 
   async function saveFigFile() {
     if (filePath || fileHandle) {
@@ -832,24 +888,22 @@ export function createEditorStore() {
     if (filePath && IS_TAURI) {
       const { readFile: tauriRead } = await import('@tauri-apps/plugin-fs')
       const bytes = await tauriRead(filePath)
-      const blob = new Blob([bytes])
-      const file = new File([blob], state.documentName + '.fig')
-      const imported = await readFigFile(file)
-      graph = imported
-      computeAllLayouts(graph)
-      subscribeToGraph()
+        await openFigData(bytes, state.documentName + '.fig', {
+            path: filePath,
+            bindToFile: true
+        })
     } else if (fileHandle) {
       const file = await fileHandle.getFile()
-      const imported = await readFigFile(file)
-      graph = imported
-      computeAllLayouts(graph)
-      subscribeToGraph()
+        const bytes = new Uint8Array(await file.arrayBuffer())
+        await openFigData(bytes, file.name, {
+            handle: fileHandle,
+            bindToFile: true
+        })
     } else {
       return
     }
 
     undo.clear()
-    savedVersion = state.sceneVersion
     state.selectedIds = new Set()
     if (graph.getNode(pageId)) {
       state.currentPageId = pageId
@@ -860,6 +914,7 @@ export function createEditorStore() {
     state.panY = viewport.panY
     state.zoom = viewport.zoom
     requestRender()
+      savedVersion = state.sceneVersion
   }
 
   function stopWatchingFile() {
@@ -2423,9 +2478,11 @@ export function createEditorStore() {
     startTextEditing,
     commitTextEdit,
     openFigFile,
+      openFigBytes,
     saveFigFile,
     setCanvasKit,
     saveFigFileAs,
+      exportFigBytes,
     renderExportImage,
     exportSelection,
     updateNode,
