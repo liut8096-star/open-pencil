@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import {useFileDialog} from '@vueuse/core'
 import {
-  onBeforeUnmount,
   SelectContent,
   SelectItem,
   SelectItemText,
@@ -15,7 +14,7 @@ import {
   TooltipRoot,
   TooltipTrigger
 } from 'reka-ui'
-import {computed, ref, shallowRef, watch} from 'vue'
+import {computed, onBeforeUnmount, ref, shallowRef, watch} from 'vue'
 
 import ProviderSettings from '@/components/chat/ProviderSettings.vue'
 import {uiInput} from '@/components/ui/input'

@@ -6,12 +6,12 @@ import * as awarenessProtocol from 'y-protocols/awareness'
 import * as Y from 'yjs'
 
 import {
-  PEER_COLORS,
-  ROOM_ID_CHARS,
-  ROOM_ID_LENGTH,
-  TRYSTERO_APP_ID,
-  TRYSTERO_RELAY_URLS,
-  YJS_JSON_FIELDS
+    PEER_COLORS,
+    ROOM_ID_CHARS,
+    ROOM_ID_LENGTH,
+    TRYSTERO_APP_ID,
+    TRYSTERO_RELAY_URLS,
+    YJS_JSON_FIELDS
 } from '@/constants'
 import type {Color, SceneNode} from '@open-pencil/core'
 import {randomIndex} from '@open-pencil/core'
